@@ -1,4 +1,5 @@
 #include "util/common.hpp"
+#include "dsp/digital.hpp"
 
 #include "Gendy.hpp"
 
@@ -7,6 +8,7 @@ struct MyModule : Module {
 	enum ParamIds {
 		FREQ_PARAM,
     STEP_PARAM,
+    TRIG_PARAM,
 		NUM_PARAMS
 	};
 	enum InputIds {
@@ -30,13 +32,16 @@ struct MyModule : Module {
     SAMPLING,
     GENERATING,
     NUM_STATES
-  }
+  };
+
+  SchmittTrigger smpTrigger;
 
   /*
    * GENDY VARS
    */
 
   int num_bpts = 12;
+  State state = SAMPLING;
 
   int min_freq = 30; 
   int max_freq = 1000;
@@ -77,7 +82,7 @@ struct MyModule : Module {
     //randomInit();
   }
 	void step() override;
-
+  float wrap(float,float,float);
 };
 
 void MyModule::step() {
@@ -88,13 +93,22 @@ void MyModule::step() {
   //if (phase >= 1.0) debug("PITCH PARAM: %f\n", (float) params[PITCH_PARAM].value);
 
   if (state==SAMPLING) {
+    speed = ((max_freq - min_freq) * 0.5 + min_freq) * deltaTime * num_bpts; 
+
     if (phase >= 1.0) {
       mAmps[index] = inputs[WAV0_INPUT].value;
 
-      index = (index + 1) % num_bpts
-      if (index >= num_bpts) state = GENERATING;
+      index++;
+      if (index >= num_bpts) {
+        state = GENERATING;
+        index = 0;
+      }
     } 
   } else if (state==GENERATING) {
+    if (smpTrigger.process(params[TRIG_PARAM].value)) {
+	    state = SAMPLING; index = 0;
+    }
+    
     max_amp_step = rescale(params[STEP_PARAM].value, 0.0, 1.0, 0.05, 0.2);
     freq_mul = rescale(params[FREQ_PARAM].value, -1.0, 1.0, 0.5, 2.0);
 
@@ -105,7 +119,7 @@ void MyModule::step() {
       index = (index + 1) % num_bpts;
 
       /* adjust vals */
-      mAmps[index] = mAmps[index] + (max_amp_step * randomNormal()); 
+      mAmps[index] = wrap(mAmps[index] + (max_amp_step * randomNormal()), -1.0f, 1.0f); 
       mDurs[index] = mDurs[index] + (max_dur_step * randomNormal());
    
       amp_next = mAmps[index];
@@ -125,13 +139,11 @@ void MyModule::step() {
   outputs[SINE_OUTPUT].value = 5.0f * amp_out;
 }
 
-float wrap(float in, float lb, float ub) {
-  float n_ub = ub; float n_lb = lb
-  if (lb < 0) {
-    n_ub += lb;
-    n_lb = 0.0f;
-  }
-  return (in % n_ub) - lb;
+float MyModule::wrap(float in, float lb, float ub) {
+  float out = in;
+  if (in > ub) out = ub;
+  else if (in < lb) out = lb;
+  return out;
 }
 
 struct MyModuleWidget : ModuleWidget {
@@ -145,9 +157,10 @@ struct MyModuleWidget : ModuleWidget {
 
 		addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(28, 87), module, MyModule::FREQ_PARAM, -1.0, 1.0, 0.0));
     addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(28, 150), module, MyModule::STEP_PARAM, 0.0, 1.0, 0.9));
+    addParam(ParamWidget::create<CKD6>(Vec(33, 185), module, MyModule::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
 
 
-		addInput(Port::create<PJ301MPort>(Vec(33, 186), Port::INPUT, module, MyModule::WAV0_INPUT));
+		addInput(Port::create<PJ301MPort>(Vec(33, 220), Port::INPUT, module, MyModule::WAV0_INPUT));
 
 		addOutput(Port::create<PJ301MPort>(Vec(33, 275), Port::OUTPUT, module, MyModule::SINE_OUTPUT));
 
