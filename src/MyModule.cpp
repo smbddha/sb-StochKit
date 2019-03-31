@@ -10,7 +10,7 @@ struct MyModule : Module {
 		NUM_PARAMS
 	};
 	enum InputIds {
-		PITCH_INPUT,
+		WAV0_INPUT,
 		NUM_INPUTS
 	};
 	enum OutputIds {
@@ -25,11 +25,19 @@ struct MyModule : Module {
 	float phase = 1.0;
 	float blinkPhase = 0.0;
 
-	
+
+  enum State {
+    SAMPLING,
+    GENERATING,
+    NUM_STATES
+  }
+
   /*
    * GENDY VARS
    */
- 
+
+  int num_bpts = 12;
+
   int min_freq = 30; 
   int max_freq = 1000;
 
@@ -56,6 +64,7 @@ struct MyModule : Module {
   } 
   */
 
+  float sample[48000];
   float amp_next = mAmps[0];
 
 	// For more advanced Module features, read Rack's engine.hpp header file
@@ -78,42 +87,52 @@ void MyModule::step() {
 
   //if (phase >= 1.0) debug("PITCH PARAM: %f\n", (float) params[PITCH_PARAM].value);
 
-  max_amp_step = rescale(params[STEP_PARAM].value, 0.0, 1.0, 0.05, 0.2);
-  freq_mul = rescale(params[FREQ_PARAM].value, -1.0, 1.0, 0.5, 2.0);
+  if (state==SAMPLING) {
+    if (phase >= 1.0) {
+      mAmps[index] = inputs[WAV0_INPUT].value;
 
-  if (phase >= 1.0) {
-    phase -= 1.0;
+      index = (index + 1) % num_bpts
+      if (index >= num_bpts) state = GENERATING;
+    } 
+  } else if (state==GENERATING) {
+    max_amp_step = rescale(params[STEP_PARAM].value, 0.0, 1.0, 0.05, 0.2);
+    freq_mul = rescale(params[FREQ_PARAM].value, -1.0, 1.0, 0.5, 2.0);
 
-    amp = amp_next;
-    index = (index + 1) % 12;
+    if (phase >= 1.0) {
+      phase -= 1.0;
 
-    /* adjust vals */
-    mAmps[index] = mAmps[index] + (max_amp_step * randomNormal()); 
-    mDurs[index] = mDurs[index] + (max_dur_step * randomNormal());
- 
-    amp_next = mAmps[index];
-    rate = mDurs[index];
+      amp = amp_next;
+      index = (index + 1) % num_bpts;
 
-    speed = ((max_freq - min_freq) * rate + min_freq) * deltaTime * 12; 
-    speed *= freq_mul;
+      /* adjust vals */
+      mAmps[index] = mAmps[index] + (max_amp_step * randomNormal()); 
+      mDurs[index] = mDurs[index] + (max_dur_step * randomNormal());
+   
+      amp_next = mAmps[index];
+      rate = mDurs[index];
+
+      speed = ((max_freq - min_freq) * rate + min_freq) * deltaTime * num_bpts; 
+      speed *= freq_mul;
+    }
+   
+    amp_out = ((1.0 - phase) * amp) + (phase * amp_next);
+
   }
- 
-  amp_out = ((1.0 - phase) * amp) + (phase * amp_next);
-  phase += speed;
 
+  phase += speed;
 
   //debug("Phase %f\n", phase);
   outputs[SINE_OUTPUT].value = 5.0f * amp_out;
-
-  /*
-	// Blink light at 1Hz
-	blinkPhase += deltaTime;
-	if (blinkPhase >= 1.0f)
-		blinkPhase -= 1.0f;
-	lights[BLINK_LIGHT].value = (blinkPhase < 0.5f) ? 1.0f : 0.0f;
-  */
 }
 
+float wrap(float in, float lb, float ub) {
+  float n_ub = ub; float n_lb = lb
+  if (lb < 0) {
+    n_ub += lb;
+    n_lb = 0.0f;
+  }
+  return (in % n_ub) - lb;
+}
 
 struct MyModuleWidget : ModuleWidget {
 	MyModuleWidget(MyModule *module) : ModuleWidget(module) {
@@ -128,7 +147,7 @@ struct MyModuleWidget : ModuleWidget {
     addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(28, 150), module, MyModule::STEP_PARAM, 0.0, 1.0, 0.9));
 
 
-		addInput(Port::create<PJ301MPort>(Vec(33, 186), Port::INPUT, module, MyModule::PITCH_INPUT));
+		addInput(Port::create<PJ301MPort>(Vec(33, 186), Port::INPUT, module, MyModule::WAV0_INPUT));
 
 		addOutput(Port::create<PJ301MPort>(Vec(33, 275), Port::OUTPUT, module, MyModule::SINE_OUTPUT));
 
