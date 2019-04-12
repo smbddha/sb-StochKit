@@ -3,11 +3,13 @@
 
 #include "Gendy.hpp"
 
+#define MAX_BPTS 30
 
 struct MyModule : Module {
 	enum ParamIds {
 		FREQ_PARAM,
     STEP_PARAM,
+    BPTS_PARAM,
     TRIG_PARAM,
 		NUM_PARAMS
 	};
@@ -47,8 +49,8 @@ struct MyModule : Module {
   int max_freq = 1000;
 
 
-  float mAmps[12] = {0.};
-  float mDurs[12] = {0.};
+  float mAmps[MAX_BPTS] = {0.};
+  float mDurs[MAX_BPTS] = {0.};
 
   int index = 0;
   float amp = 0.0; 
@@ -89,6 +91,9 @@ void MyModule::step() {
 	// Implement a simple sine oscillator
   float deltaTime = engineGetSampleTime();
   float amp_out = 0.0;
+
+  int new_nbpts = clamp((int) params[BPTS_PARAM].value, 3, MAX_BPTS);
+  if (new_nbpts != num_bpts) num_bpts = new_nbpts;
 
   //if (phase >= 1.0) debug("PITCH PARAM: %f\n", (float) params[PITCH_PARAM].value);
 
@@ -158,9 +163,9 @@ struct MyModuleWidget : ModuleWidget {
 		addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(28, 87), module, MyModule::FREQ_PARAM, -1.0, 1.0, 0.0));
     addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(28, 150), module, MyModule::STEP_PARAM, 0.0, 1.0, 0.9));
     addParam(ParamWidget::create<CKD6>(Vec(33, 185), module, MyModule::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
+    addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(33, 210), module, MyModule::BPTS_PARAM, 3, MAX_BPTS, 0));
 
-
-		addInput(Port::create<PJ301MPort>(Vec(33, 220), Port::INPUT, module, MyModule::WAV0_INPUT));
+		addInput(Port::create<PJ301MPort>(Vec(33, 245), Port::INPUT, module, MyModule::WAV0_INPUT));
 
 		addOutput(Port::create<PJ301MPort>(Vec(33, 275), Port::OUTPUT, module, MyModule::SINE_OUTPUT));
 
