@@ -61,6 +61,12 @@ struct MyModule : Module {
   float rate = 0.0;
 
   float freq_mul = 1.0;
+
+  /*
+   * TODO
+   * wavetable integration ?
+   */
+
   /*
    * Do random initialization stuff
    */
@@ -153,15 +159,15 @@ float MyModule::wrap(float in, float lb, float ub) {
 
 struct MyModuleWidget : ModuleWidget {
 	MyModuleWidget(MyModule *module) : ModuleWidget(module) {
-		setPanel(SVG::load(assetPlugin(plugin, "res/MyModule.svg")));
+		setPanel(SVG::load(assetPlugin(plugin, "res/MyModule3.svg")));
 
 		addChild(Widget::create<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-		addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
+		addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 6 * RACK_GRID_WIDTH, 0)));
 		addChild(Widget::create<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-		addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+		addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 6 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
 		addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(28, 87), module, MyModule::FREQ_PARAM, -1.0, 1.0, 0.0));
-    addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(28, 150), module, MyModule::STEP_PARAM, 0.0, 1.0, 0.9));
+    addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(68, 87), module, MyModule::STEP_PARAM, 0.0, 1.0, 0.9));
     addParam(ParamWidget::create<CKD6>(Vec(33, 185), module, MyModule::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
     addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(33, 210), module, MyModule::BPTS_PARAM, 3, MAX_BPTS, 0));
 
