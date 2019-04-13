@@ -3,13 +3,41 @@
 
 #include "Gendy.hpp"
 
-#define TABLE_SIZE 1 << 12
+#define TABLE_SIZE 1 << 11
 #define MAX_BPTS 30
 
-struct MyEnv {
-  
-  void process();
-  void process(n);
+struct Wavetable {
+
+  float table[TABLE_SIZE];
+
+  Wavetable() {
+    // Fill the wavetable
+    float phase = 0.0;
+    for (int i=0; i<TABLE_SIZE; i++) {
+      table[i] = sinf(2.f*M_PI * phase); 
+      phase += (float) i  / (2.f*M_PI);
+    }
+  }
+
+  float operator[](int x) {
+    return table[x];
+  }
+
+  float operator[](float x) {
+    float fl = floorf(x);
+    float ph = x - fl;
+    float lb = table[(int) fl];
+    float ub = table[(int) ceilf(x)];
+
+    return ((1.0 - ph) * lb) + (ph * ub);
+  }
+
+  /*
+   * Expects val 0.0 <= x < 1.0
+   */
+  float get(float x) {
+    this[x * TABLE_SIZE]; 
+  }
 };
 
 struct MyModule : Module {
@@ -62,8 +90,9 @@ struct MyModule : Module {
   int max_freq = 1000;
 
 
-  float mAmps[MAX_BPTS] = {0.};
-  float mDurs[MAX_BPTS] = {0.};
+  float mAmps[MAX_BPTS] = {0.f};
+  float mDurs[MAX_BPTS] = {0.f};
+  float mOffs[MAX_BPTS] = {0.f};
 
   int index = 0;
   float amp = 0.0; 
@@ -74,6 +103,10 @@ struct MyModule : Module {
   float rate = 0.0;
 
   float freq_mul = 1.0;
+
+  // vars for grain offsets
+  float off = 0.0;
+  float off_next = 0.0;
 
   /*
    * TODO
@@ -90,7 +123,7 @@ struct MyModule : Module {
   } 
   */
 
-  float sample[TABLE_SIZE];
+  Wavetable sample;
   float amp_next = mAmps[0];
 
 	// For more advanced Module features, read Rack's engine.hpp header file
@@ -99,15 +132,9 @@ struct MyModule : Module {
 	// - onReset, onRandomize, onCreate, onDelete: implements special behavior when user clicks these from the context menu
 
   MyModule() : Module(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {
- 
-    // Fill the wavetable
-    float phase = 0.0;
-    for (int i=0; i<TABLE_SIZE; i++) {
-      sample[i] = sinf(2.f*M_PI * phase); 
-      phase += (float) i  / (2.f*M_PI);
-    }
   }
-	void step() override;
+	
+  void step() override;
   float wrap(float,float,float);
 };
 
@@ -165,8 +192,7 @@ void MyModule::step() {
 
   phase += speed;
 
-  //debug("Phase %f\n", phase);
-  outputs[SINE_OUTPUT].value = 5.0f * amp_out;
+  outpts[SINE_OUTPUT].value = 5.0f * amp_out;
 }
 
 float MyModule::wrap(float in, float lb, float ub) {
