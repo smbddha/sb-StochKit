@@ -3,7 +3,14 @@
 
 #include "Gendy.hpp"
 
+#define TABLE_SIZE 1 << 12
 #define MAX_BPTS 30
+
+struct MyEnv {
+  
+  void process();
+  void process(n);
+};
 
 struct MyModule : Module {
 	enum ParamIds {
@@ -34,6 +41,12 @@ struct MyModule : Module {
     SAMPLING,
     GENERATING,
     NUM_STATES
+  };
+
+  enum InterpolationTypes {
+    LINEAR,
+    COSINE,
+    GRANULAR
   };
 
   SchmittTrigger smpTrigger;
@@ -77,7 +90,7 @@ struct MyModule : Module {
   } 
   */
 
-  float sample[48000];
+  float sample[TABLE_SIZE];
   float amp_next = mAmps[0];
 
 	// For more advanced Module features, read Rack's engine.hpp header file
@@ -86,8 +99,13 @@ struct MyModule : Module {
 	// - onReset, onRandomize, onCreate, onDelete: implements special behavior when user clicks these from the context menu
 
   MyModule() : Module(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {
-  
-    //randomInit();
+ 
+    // Fill the wavetable
+    float phase = 0.0;
+    for (int i=0; i<TABLE_SIZE; i++) {
+      sample[i] = sinf(2.f*M_PI * phase); 
+      phase += (float) i  / (2.f*M_PI);
+    }
   }
 	void step() override;
   float wrap(float,float,float);
@@ -139,7 +157,8 @@ void MyModule::step() {
       speed = ((max_freq - min_freq) * rate + min_freq) * deltaTime * num_bpts; 
       speed *= freq_mul;
     }
-   
+  
+    // linear interpolation
     amp_out = ((1.0 - phase) * amp) + (phase * amp_next);
 
   }
