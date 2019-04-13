@@ -3,7 +3,7 @@
 
 #include "Gendy.hpp"
 
-#define TABLE_SIZE 1 << 11
+#define TABLE_SIZE 2048 
 #define MAX_BPTS 30
 
 struct Wavetable {
@@ -24,6 +24,10 @@ struct Wavetable {
   }
 
   float operator[](float x) {
+    return index(x); 
+  }
+
+  float index(float x) {
     float fl = floorf(x);
     float ph = x - fl;
     float lb = table[(int) fl];
@@ -36,7 +40,7 @@ struct Wavetable {
    * Expects val 0.0 <= x < 1.0
    */
   float get(float x) {
-    this[x * TABLE_SIZE]; 
+    return index(x * (float) TABLE_SIZE); 
   }
 };
 
@@ -108,10 +112,9 @@ struct MyModule : Module {
   float off = 0.0;
   float off_next = 0.0;
 
-  /*
-   * TODO
-   * wavetable integration ?
-   */
+  float g_rate = 1.f;
+  float g_idx = 0.f;
+  float g_idx_next = 0.f;
 
   /*
    * Do random initialization stuff
@@ -181,6 +184,13 @@ void MyModule::step() {
       amp_next = mAmps[index];
       rate = mDurs[index];
 
+      /* step/adjust grain sample offsets */
+      off = off_next;
+      off_next = mOffs[index];
+  
+      g_idx = g_idx_next;
+      g_idx_next = 0.0;
+
       speed = ((max_freq - min_freq) * rate + min_freq) * deltaTime * num_bpts; 
       speed *= freq_mul;
     }
@@ -188,11 +198,14 @@ void MyModule::step() {
     // linear interpolation
     amp_out = ((1.0 - phase) * amp) + (phase * amp_next);
 
+    /* 
+     * TODO
+     * implement granular interpolation here
+     */
   }
 
   phase += speed;
-
-  outpts[SINE_OUTPUT].value = 5.0f * amp_out;
+  outputs[SINE_OUTPUT].value = 5.0f * amp_out;
 }
 
 float MyModule::wrap(float in, float lb, float ub) {
