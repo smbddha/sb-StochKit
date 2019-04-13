@@ -2,47 +2,9 @@
 #include "dsp/digital.hpp"
 
 #include "Gendy.hpp"
+#include "wavetable.hpp"
 
-#define TABLE_SIZE 2048 
 #define MAX_BPTS 30
-
-struct Wavetable {
-
-  float table[TABLE_SIZE];
-
-  Wavetable() {
-    // Fill the wavetable
-    float phase = 0.0;
-    for (int i=0; i<TABLE_SIZE; i++) {
-      table[i] = sinf(2.f*M_PI * phase); 
-      phase += (float) i  / (2.f*M_PI);
-    }
-  }
-
-  float operator[](int x) {
-    return table[x];
-  }
-
-  float operator[](float x) {
-    return index(x); 
-  }
-
-  float index(float x) {
-    float fl = floorf(x);
-    float ph = x - fl;
-    float lb = table[(int) fl];
-    float ub = table[(int) ceilf(x)];
-
-    return ((1.0 - ph) * lb) + (ph * ub);
-  }
-
-  /*
-   * Expects val 0.0 <= x < 1.0
-   */
-  float get(float x) {
-    return index(x * (float) TABLE_SIZE); 
-  }
-};
 
 struct MyModule : Module {
 	enum ParamIds {
@@ -100,7 +62,8 @@ struct MyModule : Module {
 
   int index = 0;
   float amp = 0.0; 
-
+  float amp_next = mAmps[0];
+  
   float max_amp_step = 0.05;
   float max_dur_step = 0.0;
   float speed = 0.0;
@@ -116,6 +79,9 @@ struct MyModule : Module {
   float g_idx = 0.f;
   float g_idx_next = 0.f;
 
+  float g_amp = 0.f;
+  float g_amp_next = 0.f;
+
   /*
    * Do random initialization stuff
    */
@@ -127,7 +93,8 @@ struct MyModule : Module {
   */
 
   Wavetable sample;
-  float amp_next = mAmps[0];
+  Wavetable env = Wavetable(1); 
+  Wavetable env_next = Wavetable(1);
 
 	// For more advanced Module features, read Rack's engine.hpp header file
 	// - toJson, fromJson: serialization of internal data
@@ -195,13 +162,11 @@ void MyModule::step() {
       speed *= freq_mul;
     }
   
-    // linear interpolation
-    amp_out = ((1.0 - phase) * amp) + (phase * amp_next);
+    g_amp = amp + (env[g_idx] * sample.get(off));
+    g_amp_next = amp_next + (env_next[g_idx_next] * sample.get(off_next));
 
-    /* 
-     * TODO
-     * implement granular interpolation here
-     */
+    // linear interpolation
+    amp_out = ((1.0 - phase) * g_amp) + (phase * g_amp_next);
   }
 
   phase += speed;
@@ -230,7 +195,6 @@ struct MyModuleWidget : ModuleWidget {
     addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(33, 210), module, MyModule::BPTS_PARAM, 3, MAX_BPTS, 0));
 
 		addInput(Port::create<PJ301MPort>(Vec(33, 245), Port::INPUT, module, MyModule::WAV0_INPUT));
-
 		addOutput(Port::create<PJ301MPort>(Vec(33, 275), Port::OUTPUT, module, MyModule::SINE_OUTPUT));
 
 		addChild(ModuleLightWidget::create<MediumLight<RedLight>>(Vec(41, 59), module, MyModule::BLINK_LIGHT));
