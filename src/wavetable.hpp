@@ -36,8 +36,9 @@ struct Wavetable {
     for (int i=0; i<TABLE_SIZE; i++) {
       // TODO
       // make env table
-      table[i] = 0.f;
-      phase += 1 / TABLE_SIZE;
+      if (phase < 1.0) table[i] = (2 * i) / TABLE_SIZE;
+      else table[i] = ((-2 * i) / TABLE_SIZE) + 2;
+      phase += 2 / TABLE_SIZE;
     }
   }
 

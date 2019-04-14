@@ -49,6 +49,8 @@ struct MyModule : Module {
    * GENDY VARS
    */
 
+  bool GRAN_ON = false;
+    
   int num_bpts = 12;
   State state = SAMPLING;
 
@@ -132,7 +134,9 @@ void MyModule::step() {
     } 
   } else if (state==GENERATING) {
     if (smpTrigger.process(params[TRIG_PARAM].value)) {
-	    state = SAMPLING; index = 0;
+	    printf("SWITCHING TO: %s\n", GRAN_ON ? "NO GRAN" : "GRAN");
+      GRAN_ON = !GRAN_ON;
+      //state = SAMPLING; index = 0;
     }
     
     max_amp_step = rescale(params[STEP_PARAM].value, 0.0, 1.0, 0.05, 0.2);
@@ -161,14 +165,32 @@ void MyModule::step() {
       speed = ((max_freq - min_freq) * rate + min_freq) * deltaTime * num_bpts; 
       speed *= freq_mul;
     }
-  
-    g_amp = amp + (env[g_idx] * sample.get(off));
-    g_amp_next = amp_next + (env_next[g_idx_next] * sample.get(off_next));
+   
+    if (GRAN_ON) {
+      //printf("SAMPLE: %f, off: %f\n", sample.get(off), off);
+      g_amp = amp + (env.get(g_idx) * sample.get(off));
+      g_amp_next = amp_next + (env_next.get(g_idx_next) * sample.get(off_next));
 
-    // linear interpolation
-    amp_out = ((1.0 - phase) * g_amp) + (phase * g_amp_next);
+      // linear interpolation
+      amp_out = ((1.0 - phase) * g_amp) + (phase * g_amp_next); 
+    } else {
+      amp_out = ((1.0 - phase) * amp) + (phase * amp_next); 
+    }
   }
 
+  // advance the grain envelope indices
+  g_idx += speed;
+  g_idx_next += speed;
+
+  // advance sample indices
+  // TODO
+  //  -> could maybe just bundle with the envelope indices ??
+  //  -> MAKE CONTROLLABLE 
+  off = fmod(off + (1e-1 * (1.f / 48000.f)), 1.f);
+  off_next = fmod(off_next + (1e-4 * (1.f / 48000.f)), 1.f);
+
+  //printf("new off: %f\n", off);
+  
   phase += speed;
   outputs[SINE_OUTPUT].value = 5.0f * amp_out;
 }
