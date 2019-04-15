@@ -7,7 +7,7 @@
 #include "Gendy.hpp"
 #include "wavetable.hpp"
 
-#define MAX_BPTS 30
+#define MAX_BPTS 4096 
 #define MAX_SAMPLE_SIZE 1 << 21
 
 struct GenEcho : Module {
@@ -52,6 +52,28 @@ struct GenEcho : Module {
   State state = LOADING;
   unsigned int idx = 0;
 
+  // spacing between breakpoints... in samples rn
+  unsigned int bpt_spc = 150;
+  unsigned int env_dur = bpt_spc / 2;
+
+  // number of breakpoints - to be calculated according to size of
+  // the sample
+  unsigned int num_bpts = 0;
+
+  float mAmps[MAX_BPTS] = {0.f};
+  float mDurs[MAX_BPTS] = {0.f};
+  float mOffs[MAX_BPTS] = {0.f};
+
+  Wavetable env = Wavetable(1); 
+
+  unsigned int index = 0;
+  
+  float max_amp_step = 0.05f;
+  float amp = 0.f; 
+  float amp_next = 0.f;
+  float g_idx = 0.f; 
+  float g_idx_next = 0.f;
+  
   // For more advanced Module features, read Rack's engine.hpp header file
 	// - toJson, fromJson: serialization of internal data
 	// - onSampleRateChange: event triggered by a change of sample rate
@@ -77,10 +99,32 @@ void GenEcho::step() {
     if (sample == NULL) {
       debug("ERROR OPENING FILE\n");
     }
+
+    debug("totalPCMFrameCount: %d ; MAX_BPTS: %d ; RATIO for 150: %d", totalPCMFrameCount, MAX_BPTS, totalPCMFrameCount / bpt_spc);
+    num_bpts = totalPCMFrameCount / bpt_spc;
     state = GENERATING;
   } else if (state==GENERATING) {
+    if (phase >= 1.0) {
+      phase -= 1.0;
+
+      amp = amp_next;
+      index = (index + 1) % num_bpts;
+
+      /* adjust vals */
+      mAmps[index] = wrap(mAmps[index] + (max_amp_step * randomNormal()), -1.0f, 1.0f); 
+      amp_next = mAmps[index];
+
+      /* step/adjust grain sample offsets */
+      g_idx = g_idx_next;
+      g_idx_next = 0.0;
+    }
+
+    // change amp in sample buffer
+    sample[idx] += (amp * env.get(g_idx));
     amp_out = sample[idx];
+    
     idx = (idx + 1) % (unsigned int) totalPCMFrameCount;
+    phase += 1.f / (float) bpt_spc;
   }
 
   outputs[SINE_OUTPUT].value = 5.0f * amp_out;
