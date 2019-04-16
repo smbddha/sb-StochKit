@@ -12,7 +12,10 @@
 
 struct GenEcho : Module {
 	enum ParamIds {
-		NUM_PARAMS
+    BSPC_PARAM,
+		TRIG_PARAM,
+    STEP_PARAM,
+    NUM_PARAMS
 	};
 	enum InputIds {
 		WAV0_INPUT,
@@ -45,6 +48,8 @@ struct GenEcho : Module {
   SchmittTrigger smpTrigger;
 
   float *sample = NULL;
+  float *_sample = NULL;
+
   unsigned int channels;
   unsigned int sampleRate;
   drwav_uint64 totalPCMFrameCount;
@@ -53,7 +58,7 @@ struct GenEcho : Module {
   unsigned int idx = 0;
 
   // spacing between breakpoints... in samples rn
-  unsigned int bpt_spc = 150;
+  unsigned int bpt_spc = 1500;
   unsigned int env_dur = bpt_spc / 2;
 
   // number of breakpoints - to be calculated according to size of
@@ -72,7 +77,7 @@ struct GenEcho : Module {
   float amp = 0.f; 
   float amp_next = 0.f;
   float g_idx = 0.f; 
-  float g_idx_next = 0.f;
+  float g_idx_next = 0.5f;
   
   // For more advanced Module features, read Rack's engine.hpp header file
 	// - toJson, fromJson: serialization of internal data
@@ -91,11 +96,25 @@ void GenEcho::step() {
   float deltaTime = engineGetSampleTime();
   float amp_out = 0.0;
 
+  max_amp_step = params[STEP_PARAM].value;
+
+  bpt_spc = (unsigned int) params[BSPC_PARAM].value;
+  num_bpts = totalPCMFrameCount / bpt_spc;
+  env_dur = bpt_spc / 2;
+
+  // handle sample reset
+  if (smpTrigger.process(params[TRIG_PARAM].value)) {
+    for (unsigned int i=0; i<totalPCMFrameCount; i++) sample[i] = _sample[i];
+    for (unsigned int i=0; i<MAX_BPTS; i++) mAmps[i] = 0.f;
+  }
+
   if (state == LOADING) {
     // reads in the sample file and stores in the sample float arry
     // TODO
     // implement simple file browser
     sample = drwav_open_file_and_read_pcm_frames_f32("/Users/bdds/projects/vcv/Rack/plugins/SGDSS/src/sfwrite.wav", &channels, &sampleRate, &totalPCMFrameCount);
+    _sample = drwav_open_file_and_read_pcm_frames_f32("/Users/bdds/projects/vcv/Rack/plugins/SGDSS/src/sfwrite.wav", &channels, &sampleRate, &totalPCMFrameCount);
+
     if (sample == NULL) {
       debug("ERROR OPENING FILE\n");
     }
@@ -104,6 +123,7 @@ void GenEcho::step() {
     num_bpts = totalPCMFrameCount / bpt_spc;
     state = GENERATING;
   } else if (state==GENERATING) {
+    //debug("-- PHASE: %f ; G_IDX: %f ; G_IDX_NEXT: %f", phase, g_idx, g_idx_next);
     if (phase >= 1.0) {
       phase -= 1.0;
 
@@ -120,10 +140,13 @@ void GenEcho::step() {
     }
 
     // change amp in sample buffer
-    sample[idx] += (amp * env.get(g_idx));
+    sample[idx] = wrap(sample[idx] + (amp * env.get(g_idx)), -1.f, 1.f);
     amp_out = sample[idx];
-    
+  
     idx = (idx + 1) % (unsigned int) totalPCMFrameCount;
+    g_idx = fmod(g_idx + (1.f / (4.f * env_dur)), 1.f);
+    g_idx_next = fmod(g_idx_next + (1.f / (4.f * env_dur)), 1.f);
+    
     phase += 1.f / (float) bpt_spc;
   }
 
@@ -140,6 +163,10 @@ float GenEcho::wrap(float in, float lb, float ub) {
 struct GenEchoWidget : ModuleWidget {
 	GenEchoWidget(GenEcho *module) : ModuleWidget(module) {
 		setPanel(SVG::load(assetPlugin(plugin, "res/MyModule3.svg")));
+    
+    addParam(ParamWidget::create<CKD6>(Vec(40, 70), module, GenEcho::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
+    addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(40, 140), module, GenEcho::BSPC_PARAM, 800, 3000, 0.0));
+    addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(110, 140), module, GenEcho::STEP_PARAM, 0.0, 0.6, 0.9));
     
     addOutput(Port::create<PJ301MPort>(Vec(33, 275), Port::OUTPUT, module, GenEcho::SINE_OUTPUT));
 	}
