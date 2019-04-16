@@ -16,7 +16,9 @@ struct Wavetable {
   Wavetable(int n) {
     switch (n) {
       case 0:
-        initEnv();
+        initDefaultEnv();
+      case 1:
+        initHannEnv();
       default:
         initWav();
     }
@@ -31,7 +33,7 @@ struct Wavetable {
     }
   }
 
-  void initEnv() {
+  void initDefaultEnv() {
     float phase = 0.f;
     for (int i=0; i<TABLE_SIZE; i++) {
       // TODO
@@ -39,6 +41,14 @@ struct Wavetable {
       if (phase < 0.5f) table[i] = (float) i / TABLE_SIZE;
       else table[i] = ((-1.f * i) / TABLE_SIZE) + 2.f;
       phase += 1.f / TABLE_SIZE;
+    }
+  }
+
+  void initHannEnv() {
+    float a_0 = 0.5f;
+    for (int i=0; i<TABLE_SIZE; i++) {
+      table[i] = a_0 * (1 - cosf((2.f * M_PI * ((float) i / TABLE_SIZE)) / 1.f));
+      debug("%d: %f", i, table[i]);
     }
   }
 
