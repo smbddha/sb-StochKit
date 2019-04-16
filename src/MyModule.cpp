@@ -11,6 +11,7 @@ struct MyModule : Module {
 		FREQ_PARAM,
     STEP_PARAM,
     BPTS_PARAM,
+    GRAT_PARAM,
     TRIG_PARAM,
 		NUM_PARAMS
 	};
@@ -79,7 +80,7 @@ struct MyModule : Module {
 
   float g_rate = 1.f;
   float g_idx = 0.f;
-  float g_idx_next = 0.f;
+  float g_idx_next = 0.5f;
 
   float g_amp = 0.f;
   float g_amp_next = 0.f;
@@ -95,8 +96,8 @@ struct MyModule : Module {
   */
 
   Wavetable sample;
-  Wavetable env = Wavetable(1); 
-  Wavetable env_next = Wavetable(1);
+  Wavetable env = Wavetable(0); 
+  Wavetable env_next = Wavetable(0);
 
 	// For more advanced Module features, read Rack's engine.hpp header file
 	// - toJson, fromJson: serialization of internal data
@@ -143,6 +144,8 @@ void MyModule::step() {
     freq_mul = rescale(params[FREQ_PARAM].value, -1.0, 1.0, 0.5, 2.0);
 
     if (phase >= 1.0) {
+      
+      //debug("-- PHASE: %f ; G_IDX: %f ; G_IDX_NEXT: %f", phase, g_idx, g_idx_next);
       phase -= 1.0;
 
       amp = amp_next;
@@ -179,15 +182,16 @@ void MyModule::step() {
   }
 
   // advance the grain envelope indices
-  g_idx += speed;
-  g_idx_next += speed;
+  float gr = params[GRAT_PARAM].value * 5.f;
+  g_idx = fmod(g_idx + (speed/2), 1.f);
+  g_idx_next = fmod(g_idx_next + (speed/2), 1.f);
 
   // advance sample indices
   // TODO
   //  -> could maybe just bundle with the envelope indices ??
   //  -> MAKE CONTROLLABLE 
-  off = fmod(off + (1e-1 * (1.f / 48000.f)), 1.f);
-  off_next = fmod(off_next + (1e-4 * (1.f / 48000.f)), 1.f);
+  off = fmod(off + (gr * 1e-1 * (1.f / 48000.f)), 1.f);
+  off_next = fmod(off_next + (gr * 1e-4 * (1.f / 48000.f)), 1.f);
 
   //printf("new off: %f\n", off);
   
@@ -211,12 +215,13 @@ struct MyModuleWidget : ModuleWidget {
 		addChild(Widget::create<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 		addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 6 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-		addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(28, 87), module, MyModule::FREQ_PARAM, -1.0, 1.0, 0.0));
-    addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(68, 87), module, MyModule::STEP_PARAM, 0.0, 1.0, 0.9));
-    addParam(ParamWidget::create<CKD6>(Vec(33, 185), module, MyModule::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
-    addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(33, 210), module, MyModule::BPTS_PARAM, 3, MAX_BPTS, 0));
-
-		addInput(Port::create<PJ301MPort>(Vec(33, 245), Port::INPUT, module, MyModule::WAV0_INPUT));
+		addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(40, 140), module, MyModule::FREQ_PARAM, -1.0, 1.0, 0.0));
+    addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(110, 140), module, MyModule::STEP_PARAM, 0.0, 1.0, 0.9));
+    addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(40, 200), module, MyModule::GRAT_PARAM, 0.7, 1.3, 0.0));
+    addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(110, 200), module, MyModule::BPTS_PARAM, 3, MAX_BPTS, 0));
+    addParam(ParamWidget::create<CKD6>(Vec(40, 70), module, MyModule::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
+		
+    addInput(Port::create<PJ301MPort>(Vec(33, 245), Port::INPUT, module, MyModule::WAV0_INPUT));
 		addOutput(Port::create<PJ301MPort>(Vec(33, 275), Port::OUTPUT, module, MyModule::SINE_OUTPUT));
 
 		addChild(ModuleLightWidget::create<MediumLight<RedLight>>(Vec(41, 59), module, MyModule::BLINK_LIGHT));
