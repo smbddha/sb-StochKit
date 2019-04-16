@@ -6,58 +6,14 @@
 
 #define MAX_BPTS 30
 
-struct MyModule : Module {
-	enum ParamIds {
-		FREQ_PARAM,
-    STEP_PARAM,
-    BPTS_PARAM,
-    GRAT_PARAM,
-    TRIG_PARAM,
-		NUM_PARAMS
-	};
-	enum InputIds {
-		WAV0_INPUT,
-		NUM_INPUTS
-	};
-	enum OutputIds {
-		SINE_OUTPUT,
-		NUM_OUTPUTS
-	};
-	enum LightIds {
-		BLINK_LIGHT,
-		NUM_LIGHTS
-	};
-
-	float phase = 1.0;
-	float blinkPhase = 0.0;
-
-
-  enum State {
-    SAMPLING,
-    GENERATING,
-    NUM_STATES
-  };
-
-  enum InterpolationTypes {
-    LINEAR,
-    COSINE,
-    GRANULAR
-  };
-
-  SchmittTrigger smpTrigger;
-
-  /*
-   * GENDY VARS
-   */
-
-  bool GRAN_ON = false;
+struct GendyOscillator {
+  float phase = 1.f;
+  
+  bool GRAN_ON = true;
     
   int num_bpts = 12;
-  State state = SAMPLING;
-
   int min_freq = 30; 
   int max_freq = 1000;
-
 
   float mAmps[MAX_BPTS] = {0.f};
   float mDurs[MAX_BPTS] = {0.f};
@@ -78,71 +34,20 @@ struct MyModule : Module {
   float off = 0.0;
   float off_next = 0.0;
 
-  float g_rate = 1.f;
   float g_idx = 0.f;
   float g_idx_next = 0.5f;
 
   float g_amp = 0.f;
   float g_amp_next = 0.f;
-
-  /*
-   * Do random initialization stuff
-   */
-
-  /*
-  for (int i=0; i<12; i++) {
-    mAmps[i] = rack::randomNormal(); mDurs[i] = 0.6;
-  } 
-  */
+  float g_rate = 1.f;
 
   Wavetable sample;
   Wavetable env = Wavetable(0); 
   Wavetable env_next = Wavetable(0);
 
-	// For more advanced Module features, read Rack's engine.hpp header file
-	// - toJson, fromJson: serialization of internal data
-	// - onSampleRateChange: event triggered by a change of sample rate
-	// - onReset, onRandomize, onCreate, onDelete: implements special behavior when user clicks these from the context menu
+  float amp_out = 0.f;
 
-  MyModule() : Module(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {
-  }
-	
-  void step() override;
-  float wrap(float,float,float);
-};
-
-void MyModule::step() {
-	// Implement a simple sine oscillator
-  float deltaTime = engineGetSampleTime();
-  float amp_out = 0.0;
-
-  int new_nbpts = clamp((int) params[BPTS_PARAM].value, 3, MAX_BPTS);
-  if (new_nbpts != num_bpts) num_bpts = new_nbpts;
-
-  //if (phase >= 1.0) debug("PITCH PARAM: %f\n", (float) params[PITCH_PARAM].value);
-
-  if (state==SAMPLING) {
-    speed = ((max_freq - min_freq) * 0.5 + min_freq) * deltaTime * num_bpts; 
-
-    if (phase >= 1.0) {
-      mAmps[index] = inputs[WAV0_INPUT].value;
-
-      index++;
-      if (index >= num_bpts) {
-        state = GENERATING;
-        index = 0;
-      }
-    } 
-  } else if (state==GENERATING) {
-    if (smpTrigger.process(params[TRIG_PARAM].value)) {
-	    printf("SWITCHING TO: %s\n", GRAN_ON ? "NO GRAN" : "GRAN");
-      GRAN_ON = !GRAN_ON;
-      //state = SAMPLING; index = 0;
-    }
-    
-    max_amp_step = rescale(params[STEP_PARAM].value, 0.0, 1.0, 0.05, 0.2);
-    freq_mul = rescale(params[FREQ_PARAM].value, -1.0, 1.0, 0.5, 2.0);
-
+  void process(float deltaTime) {
     if (phase >= 1.0) {
       
       //debug("-- PHASE: %f ; G_IDX: %f ; G_IDX_NEXT: %f", phase, g_idx, g_idx_next);
@@ -179,32 +84,108 @@ void MyModule::step() {
     } else {
       amp_out = ((1.0 - phase) * amp) + (phase * amp_next); 
     }
+
+    // advance the grain envelope indices
+    g_idx = fmod(g_idx + (speed/2), 1.f);
+    g_idx_next = fmod(g_idx_next + (speed/2), 1.f);
+
+    // advance sample indices
+    // TODO
+    //  -> could maybe just bundle with the envelope indices ??
+    //  -> MAKE CONTROLLABLE 
+    off = fmod(off + (g_rate * 1e-1 * (1.f / 48000.f)), 1.f);
+    off_next = fmod(off_next + (g_rate * 1e-4 * (1.f / 48000.f)), 1.f);
+
+    //printf("new off: %f\n", off);
+    
+    phase += speed;
   }
 
-  // advance the grain envelope indices
-  float gr = params[GRAT_PARAM].value * 5.f;
-  g_idx = fmod(g_idx + (speed/2), 1.f);
-  g_idx_next = fmod(g_idx_next + (speed/2), 1.f);
-
-  // advance sample indices
-  // TODO
-  //  -> could maybe just bundle with the envelope indices ??
-  //  -> MAKE CONTROLLABLE 
-  off = fmod(off + (gr * 1e-1 * (1.f / 48000.f)), 1.f);
-  off_next = fmod(off_next + (gr * 1e-4 * (1.f / 48000.f)), 1.f);
-
-  //printf("new off: %f\n", off);
+  float wrap(float in, float lb, float ub) {
+    float out = in;
+    if (in > ub) out = ub;
+    else if (in < lb) out = lb;
+    return out;
+  }
   
-  phase += speed;
-  outputs[SINE_OUTPUT].value = 5.0f * amp_out;
+  float out() {
+    return amp_out;
+  }
+};
+
+struct MyModule : Module {
+	enum ParamIds {
+		FREQ_PARAM,
+    STEP_PARAM,
+    BPTS_PARAM,
+    GRAT_PARAM,
+    TRIG_PARAM,
+		NUM_PARAMS
+	};
+	enum InputIds {
+		WAV0_INPUT,
+		NUM_INPUTS
+	};
+	enum OutputIds {
+		SINE_OUTPUT,
+		NUM_OUTPUTS
+	};
+	enum LightIds {
+		BLINK_LIGHT,
+		NUM_LIGHTS
+	};
+
+	//float phase = 1.0;
+	float blinkPhase = 0.0;
+
+  enum InterpolationTypes {
+    LINEAR,
+    COSINE,
+    GRANULAR
+  };
+
+  SchmittTrigger smpTrigger;
+  GendyOscillator go;
+
+  /*
+   * GENDY VARS
+   */
+
+  // For more advanced Module features, read Rack's engine.hpp header file
+	// - toJson, fromJson: serialization of internal data
+	// - onSampleRateChange: event triggered by a change of sample rate
+	// - onReset, onRandomize, onCreate, onDelete: implements special behavior when user clicks these from the context menu
+
+  MyModule() : Module(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {
+  }
+	
+  void step() override;
+  float wrap(float,float,float);
+};
+
+void MyModule::step() {
+	// Implement a simple sine oscillator
+  float deltaTime = engineGetSampleTime();
+
+  int new_nbpts = clamp((int) params[BPTS_PARAM].value, 3, MAX_BPTS);
+  if (new_nbpts != go.num_bpts) go.num_bpts = new_nbpts;
+
+  //if (phase >= 1.0) debug("PITCH PARAM: %f\n", (float) params[PITCH_PARAM].value);
+
+  if (smpTrigger.process(params[TRIG_PARAM].value)) {
+    
+  }
+  
+  go.max_amp_step = rescale(params[STEP_PARAM].value, 0.0, 1.0, 0.05, 0.2);
+  go.freq_mul = rescale(params[FREQ_PARAM].value, -1.0, 1.0, 0.5, 2.0);
+  go.g_rate = params[GRAT_PARAM].value * 5.f;
+
+  go.process(deltaTime);
+
+  outputs[SINE_OUTPUT].value = 5.0f * go.out();
 }
 
-float MyModule::wrap(float in, float lb, float ub) {
-  float out = in;
-  if (in > ub) out = ub;
-  else if (in < lb) out = lb;
-  return out;
-}
+
 
 struct MyModuleWidget : ModuleWidget {
 	MyModuleWidget(MyModule *module) : ModuleWidget(module) {
