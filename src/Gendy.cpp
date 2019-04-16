@@ -12,6 +12,7 @@ void init(Plugin *p) {
 	// Add all Models defined throughout the plugin
 	p->addModel(modelMyModule);
   p->addModel(modelGenEcho);
+  p->addModel(modelStitcher);
 
   //p->addModel(stochasticGenerator);
 	// Any other plugin initialization may go here.

@@ -5,76 +5,79 @@
 
 #define TABLE_SIZE 2048 
 
-struct Wavetable {
+namespace rack {
+  struct Wavetable {
 
-  float table[TABLE_SIZE];
+    float table[TABLE_SIZE];
 
-  Wavetable() {
-    initWav(); 
-  }
-
-  Wavetable(int n) {
-    switch (n) {
-      case 0:
-        initDefaultEnv();
-      case 1:
-        initHannEnv();
-      default:
-        initWav();
+    Wavetable() {
+      initWav(); 
     }
-  }
 
-  void initWav() {
-    // Fill the wavetable
-    float phase = 0.f;
-    for (int i=0; i<TABLE_SIZE; i++) {
-      table[i] = sinf(2.f*M_PI * phase); 
-      phase += (float) i  / (2.f*M_PI);
+    Wavetable(int n) {
+      switch (n) {
+        case 0:
+          initDefaultEnv();
+        case 1:
+          initHannEnv();
+        default:
+          initWav();
+      }
     }
-  }
 
-  void initDefaultEnv() {
-    float phase = 0.f;
-    for (int i=0; i<TABLE_SIZE; i++) {
-      // TODO
-      // make env table
-      if (phase < 0.5f) table[i] = (float) i / TABLE_SIZE;
-      else table[i] = ((-1.f * i) / TABLE_SIZE) + 2.f;
-      phase += 1.f / TABLE_SIZE;
+    void initWav() {
+      // Fill the wavetable
+      float phase = 0.f;
+      for (int i=0; i<TABLE_SIZE; i++) {
+        table[i] = sinf(2.f*M_PI * phase); 
+        phase += (float) i  / (2.f*M_PI);
+      }
     }
-  }
 
-  void initHannEnv() {
-    float a_0 = 0.5f;
-    for (int i=0; i<TABLE_SIZE; i++) {
-      table[i] = a_0 * (1 - cosf((2.f * M_PI * ((float) i / TABLE_SIZE)) / 1.f));
-      debug("%d: %f", i, table[i]);
+    void initDefaultEnv() {
+      float phase = 0.f;
+      for (int i=0; i<TABLE_SIZE; i++) {
+        // TODO
+        // make env table
+        if (phase < 0.5f) table[i] = (float) i / TABLE_SIZE;
+        else table[i] = ((-1.f * i) / TABLE_SIZE) + 2.f;
+        phase += 1.f / TABLE_SIZE;
+      }
     }
-  }
 
-  float operator[](int x) {
-    return table[x];
-  }
+    void initHannEnv() {
+      float a_0 = 0.5f;
+      for (int i=0; i<TABLE_SIZE; i++) {
+        table[i] = a_0 * (1 - cosf((2.f * M_PI * ((float) i / TABLE_SIZE)) / 1.f));
+        debug("%d: %f", i, table[i]);
+      }
+    }
 
-  float operator[](float x) {
-    return index(x); 
-  }
+    float operator[](int x) {
+      return table[x];
+    }
 
-  float index(float x) {
-    float fl = floorf(x);
-    float ph = x - fl;
-    float lb = table[(int) fl];
-    float ub = table[(int) ceilf(x)];
+    float operator[](float x) {
+      return index(x); 
+    }
 
-    return ((1.0 - ph) * lb) + (ph * ub);
-  }
+    float index(float x) {
+      float fl = floorf(x);
+      float ph = x - fl;
+      float lb = table[(int) fl];
+      float ub = table[(int) ceilf(x)];
 
-  /*
-   * Expects val 0.0 <= x < 1.0
-   */
-  float get(float x) {
-    return index(x * (float) TABLE_SIZE); 
-  }
-};
+      return ((1.0 - ph) * lb) + (ph * ub);
+    }
+
+    /*
+     * Expects val 0.0 <= x < 1.0
+     */
+    float get(float x) {
+      return index(x * (float) TABLE_SIZE); 
+    }
+  };
+
+}
 
 #endif
