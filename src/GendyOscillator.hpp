@@ -50,7 +50,11 @@ namespace rack {
 
     float amp_out = 0.f;
 
+    // only true when just reached last break point
+    bool last_flag = false;
+
     void process(float deltaTime) {
+      last_flag = false;
       if (phase >= 1.0) {
         
         //debug("-- PHASE: %f ; G_IDX: %f ; G_IDX_NEXT: %f", phase, g_idx, g_idx_next);
@@ -58,6 +62,8 @@ namespace rack {
 
         amp = amp_next;
         index = (index + 1) % num_bpts;
+       
+        last_flag = index == num_bpts - 1;
 
         /* adjust vals */
         mAmps[index] = wrap(mAmps[index] + (max_amp_step * randomNormal()), -1.0f, 1.0f); 
