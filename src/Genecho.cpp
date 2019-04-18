@@ -69,7 +69,7 @@ struct GenEcho : Module {
   float mDurs[MAX_BPTS] = {0.f};
   float mOffs[MAX_BPTS] = {0.f};
 
-  Wavetable env = Wavetable(1); 
+  Wavetable env = Wavetable(HANN); 
 
   unsigned int index = 0;
   
@@ -93,7 +93,7 @@ struct GenEcho : Module {
 
 void GenEcho::step() {
 	// Implement a simple sine oscillator
-  float deltaTime = engineGetSampleTime();
+  //float deltaTime = engineGetSampleTime();
   float amp_out = 0.0;
 
   max_amp_step = params[STEP_PARAM].value;

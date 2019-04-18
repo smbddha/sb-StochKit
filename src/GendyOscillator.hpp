@@ -45,8 +45,8 @@ namespace rack {
     float g_rate = 1.f;
 
     Wavetable sample;
-    Wavetable env = Wavetable(0); 
-    Wavetable env_next = Wavetable(0);
+    Wavetable env = Wavetable(SIN); 
+    Wavetable env_next = Wavetable(SIN);
 
     float amp_out = 0.f;
 

@@ -6,31 +6,64 @@
 #define TABLE_SIZE 2048 
 
 namespace rack {
+
+  enum EnvType {
+    SIN,
+    TRI,
+    HANN,
+    WELCH,
+    TUKEY,
+    NUM_ENVS
+  };
+
   struct Wavetable {
 
     float table[TABLE_SIZE];
+    
+    EnvType et;
 
     Wavetable() {
-      initWav(); 
+      // default to a cycle of a sin wave
+      et = SIN;
+      initSinWav(); 
     }
 
-    Wavetable(int n) {
-      switch (n) {
-        case 0:
+    Wavetable(EnvType e) {
+      et = e;
+      init(e);
+    }
+
+    void init(EnvType e) {
+      switch (e) {
+        case SIN:
+          initSinWav();
+          break;
+        case TRI:
           initDefaultEnv();
           break;
-        case 1:
+        case HANN:
           initHannEnv();
           break;
-        case 2:
+        case WELCH:
           initWelchEnv();
           break;
+        case TUKEY:
+          initTukeyEnv();
+          break;
         default:
-          initWav();
+          initSinWav();
       }
     }
 
-    void initWav() {
+    void switchEnvType(EnvType e) {
+      // don't switch if already that env
+      if (et != e) {
+        et = e;
+        init(e); 
+      }
+    }
+
+    void initSinWav() {
       // Fill the wavetable
       float phase = 0.f;
       for (int i=0; i<TABLE_SIZE; i++) {
