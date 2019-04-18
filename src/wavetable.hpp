@@ -18,8 +18,13 @@ namespace rack {
       switch (n) {
         case 0:
           initDefaultEnv();
+          break;
         case 1:
           initHannEnv();
+          break;
+        case 2:
+          initWelchEnv();
+          break;
         default:
           initWav();
       }
@@ -49,6 +54,34 @@ namespace rack {
       float a_0 = 0.5f;
       for (int i=0; i<TABLE_SIZE; i++) {
         table[i] = a_0 * (1 - cosf((2.f * M_PI * ((float) i / TABLE_SIZE)) / 1.f));
+      }
+    }
+
+    void initWelchEnv() {
+      float ts = (float) TABLE_SIZE;
+      for (int i=0; i<TABLE_SIZE; i++) {
+        table[i] = 1.f - pow((((float) i / ts) - (ts / 2.f)) / (ts / 2.f), 2); 
+      }
+    }
+
+    void initTukeyEnv() {
+      float p1,p2,N,alpha,n;
+
+      alpha = 0.5f;
+
+      N = (float) TABLE_SIZE;
+      p1 = alpha * N / 2;
+      p2 = N * (1 - (alpha / 2));
+
+      for (int i=0; i<TABLE_SIZE; i++) {
+        n = (float) i / N;
+        if (n < p1) {
+          table[i] = 0.5f * (1 + cosf(M_PI * (((2 * n) / (alpha * N)) - 1)));
+        }
+        else if (n <= p2) table[i] = 1.f; 
+        else {
+          table[i] = 0.5f * (1 + cosf(M_PI * (((2 * n) / (alpha * N)) - (2 / alpha) + 1)));
+        }
       }
     }
 
