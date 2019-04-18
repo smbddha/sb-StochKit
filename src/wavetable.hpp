@@ -49,7 +49,6 @@ namespace rack {
       float a_0 = 0.5f;
       for (int i=0; i<TABLE_SIZE; i++) {
         table[i] = a_0 * (1 - cosf((2.f * M_PI * ((float) i / TABLE_SIZE)) / 1.f));
-        debug("%d: %f", i, table[i]);
       }
     }
 

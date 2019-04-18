@@ -5,7 +5,7 @@
 #include "wavetable.hpp"
 #include "GendyOscillator.hpp"
 
-#define NUM_OSCS 3
+#define NUM_OSCS 4
 
 struct Stitcher : Module {
 	enum ParamIds {
@@ -14,7 +14,11 @@ struct Stitcher : Module {
     BPTS_PARAM,
     GRAT_PARAM,
     TRIG_PARAM,
-		NUM_PARAMS
+    ENUMS(F_PARAM, NUM_OSCS),
+    ENUMS(B_PARAM, NUM_OSCS),
+    ENUMS(S_PARAM, NUM_OSCS),
+    ENUMS(G_PARAM, NUM_OSCS),
+    NUM_PARAMS
 	};
 	enum InputIds {
 		WAV0_INPUT,
@@ -57,10 +61,18 @@ struct Stitcher : Module {
 void Stitcher::step() {
   float deltaTime = engineGetSampleTime();
 
-  int new_nbpts = clamp((int) params[BPTS_PARAM].value, 3, MAX_BPTS);
-  if (new_nbpts != gos[0].num_bpts) gos[0].num_bpts = new_nbpts;
-
+  
   //if (phase >= 1.0) debug("PITCH PARAM: %f\n", (float) params[PITCH_PARAM].value);
+
+  for (int i=0; i<NUM_OSCS; i++) {
+    gos[i].max_amp_step = rescale(params[S_PARAM + i].value, 0.0, 1.0, 0.05, 0.3);
+    gos[i].freq_mul = rescale(params[F_PARAM + i].value, -1.0, 1.0, 0.5, 4.0);
+    gos[i].g_rate = params[G_PARAM + i].value * 5.f;
+  
+    int new_nbpts = clamp((int) params[B_PARAM + i].value, 3, MAX_BPTS);
+    if (new_nbpts != gos[i].num_bpts) gos[i].num_bpts = new_nbpts;
+    //debug("I: %d", i);
+  }
 
   if (smpTrigger.process(params[TRIG_PARAM].value)) {
   }
@@ -72,22 +84,17 @@ void Stitcher::step() {
     
     if (phase >= 1.0) is_swapping = false;
   } else {
-    gos[osc_idx].max_amp_step = rescale(params[STEP_PARAM].value, 0.0, 1.0, 0.05, 0.3);
-    gos[osc_idx].freq_mul = rescale(params[FREQ_PARAM].value, -1.0, 1.0, 0.5, 4.0);
-    gos[osc_idx].g_rate = params[GRAT_PARAM].value * 5.f;
-
+    
     gos[osc_idx].process(deltaTime);
     amp_out = gos[osc_idx].out();
     
     if (gos[osc_idx].last_flag) {
       s_count--;
       if (s_count < 0) {
-        debug("SWAPPING FROM %d", osc_idx);
-        
         amp = amp_out;
         speed = gos[osc_idx].speed;
         osc_idx = (osc_idx + 1) % NUM_OSCS;
-        
+        debug("-- new idx %d, bpts: %d, freq_mul: %d", osc_idx, gos[osc_idx].num_bpts, gos[osc_idx].freq_mul); 
         gos[osc_idx].process(deltaTime);
         amp_next = gos[osc_idx].out();  
         
@@ -103,19 +110,26 @@ void Stitcher::step() {
 
 struct StitcherWidget : ModuleWidget {
 	StitcherWidget(Stitcher *module) : ModuleWidget(module) {
-		setPanel(SVG::load(assetPlugin(plugin, "res/MyModule3.svg")));
+		setPanel(SVG::load(assetPlugin(plugin, "res/Stitch.svg")));
 
 		addChild(Widget::create<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
 		addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 6 * RACK_GRID_WIDTH, 0)));
 		addChild(Widget::create<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 		addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 6 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-		addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(40, 140), module, Stitcher::FREQ_PARAM, -1.0, 1.0, 0.0));
-    addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(110, 140), module, Stitcher::STEP_PARAM, 0.0, 1.0, 0.9));
-    addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(40, 200), module, Stitcher::GRAT_PARAM, 0.7, 1.3, 0.0));
-    addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(110, 200), module, Stitcher::BPTS_PARAM, 3, MAX_BPTS, 0));
-    addParam(ParamWidget::create<CKD6>(Vec(40, 70), module, Stitcher::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
-		
+		addParam(ParamWidget::create<CKD6>(Vec(40, 70), module, Stitcher::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
+
+    int index = 0;
+    for (int i = 0; i < NUM_OSCS/2; i++) {
+			for (int j = 0; j < NUM_OSCS/2; j++) {
+        addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(30+(i*115), 100+(j*115)), module, Stitcher::F_PARAM + index, -1.0, 1.0, 0.0));
+        addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(30+(i*115), 140+(j*115)), module, Stitcher::S_PARAM + index, 0.0, 1.0, 0.9));
+        addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(90+(i*115), 100+(j*115)), module, Stitcher::G_PARAM + index, 0.7, 1.3, 0.0));
+        addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(90+(i*115), 140+(j*115)), module, Stitcher::B_PARAM + index, 3, MAX_BPTS, 0));
+        index++;
+      }
+    }
+
     addInput(Port::create<PJ301MPort>(Vec(33, 245), Port::INPUT, module, Stitcher::WAV0_INPUT));
 		addOutput(Port::create<PJ301MPort>(Vec(33, 275), Port::OUTPUT, module, Stitcher::SINE_OUTPUT));
 
