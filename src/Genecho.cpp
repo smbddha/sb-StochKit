@@ -8,12 +8,13 @@
 #include "wavetable.hpp"
 
 #define MAX_BPTS 4096 
-#define MAX_SAMPLE_SIZE 1 << 21
+#define MAX_SAMPLE_SIZE 44100 
 
 struct GenEcho : Module {
 	enum ParamIds {
     BSPC_PARAM,
 		TRIG_PARAM,
+    GATE_PARAM, 
     STEP_PARAM,
     NUM_PARAMS
 	};
@@ -48,6 +49,7 @@ struct GenEcho : Module {
 
   SchmittTrigger smpTrigger;
   SchmittTrigger gTrigger;
+  SchmittTrigger g2Trigger;
 
   float *sample = NULL;
   float *_sample = NULL;
@@ -93,6 +95,7 @@ struct GenEcho : Module {
 	// - onReset, onRandomize, onCreate, onDelete: implements special behavior when user clicks these from the context menu
 
   GenEcho() : Module(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {
+    debug("MAX SAMPLE SIZE: %d", MAX_SAMPLE_SIZE);
   }
 	
   void step() override;
@@ -112,16 +115,18 @@ void GenEcho::step() {
 
   // handle sample reset
   if (smpTrigger.process(params[TRIG_PARAM].value)) {
-    for (unsigned int i=0; i<totalPCMFrameCount; i++) sample[i] = _sample[i];
+    for (unsigned int i=0; i<sample_size; i++) sample[i] = _sample[i];
     for (unsigned int i=0; i<MAX_BPTS; i++) mAmps[i] = 0.f;
   }
 
   // handle sample trigger through gate 
-	if (gTrigger.process(inputs[GATE_INPUT].value)) {
+	if (gTrigger.process(params[GATE_PARAM].value 
+      || g2Trigger.process(inputs[GATE_INPUT].value))) {
     debug("TRIGGERED");
+    for (unsigned int i=0; i<MAX_BPTS; i++) mAmps[i] = 0.f;
     sample_size = MAX_SAMPLE_SIZE; 
     sampling = true;
-    index = 0;
+    idx = 0;
     s_i = 0;
   }
 
@@ -146,31 +151,42 @@ void GenEcho::step() {
     // can be sampling but still output, just at a 1 sample delay
     // or will there even be a delay ??
     if (sampling) {
-      if (s_i >= sample_size) {
+      if (s_i >= sample_size - 50) {
+        float x,y,p;
+        x = sample[s_i-1];
+        y = sample[0];
+        p = 0.f;
+        while (s_i < sample_size) {
+          sample[s_i] = (x * (1-p)) + (y * p);
+          p += 1.f / 50.f;
+          s_i++;
+        }
+        debug("Finished sampling");
         sampling = false;
       } else {
         sample[s_i] = inputs[WAV0_INPUT].value; 
         _sample[s_i] = sample[s_i];
+        s_i++;
       } 
     }
-    
+   
     if (phase >= 1.0) {
       phase -= 1.0;
 
       amp = amp_next;
       index = (index + 1) % num_bpts;
 
-      /* adjust vals */
+      // adjust vals 
       mAmps[index] = wrap(mAmps[index] + (max_amp_step * randomNormal()), -1.0f, 1.0f); 
       amp_next = mAmps[index];
 
-      /* step/adjust grain sample offsets */
+      // step/adjust grain sample offsets 
       g_idx = g_idx_next;
       g_idx_next = 0.0;
     }
 
     // change amp in sample buffer
-    sample[idx] = wrap(sample[idx] + (amp * env.get(g_idx)), -1.f, 1.f);
+    sample[idx] = wrap(sample[idx] + (amp * env.get(g_idx)), -5.f, 5.f);
     amp_out = sample[idx];
   
     idx = (idx + 1) % sample_size;
@@ -180,7 +196,7 @@ void GenEcho::step() {
     phase += 1.f / (float) bpt_spc;
   }
 
-  outputs[SINE_OUTPUT].value = 5.0f * amp_out;
+  outputs[SINE_OUTPUT].value = amp_out;
 }
 
 float GenEcho::wrap(float in, float lb, float ub) {
@@ -194,10 +210,12 @@ struct GenEchoWidget : ModuleWidget {
 	GenEchoWidget(GenEcho *module) : ModuleWidget(module) {
 		setPanel(SVG::load(assetPlugin(plugin, "res/MyModule3.svg")));
     
+    addParam(ParamWidget::create<CKD6>(Vec(110, 70), module, GenEcho::GATE_PARAM, 0.0f, 1.0f, 0.0f));
     addParam(ParamWidget::create<CKD6>(Vec(40, 70), module, GenEcho::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
-    addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(40, 140), module, GenEcho::BSPC_PARAM, 800, 3000, 0.0));
-    addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(110, 140), module, GenEcho::STEP_PARAM, 0.0, 0.6, 0.9));
+    addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(40, 170), module, GenEcho::BSPC_PARAM, 800, 3000, 0.0));
+    addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(110, 170), module, GenEcho::STEP_PARAM, 0.0, 0.6, 0.9));
    
+    addInput(Port::create<PJ301MPort>(Vec(110, 120), Port::INPUT, module, GenEcho::GATE_INPUT));
     addInput(Port::create<PJ301MPort>(Vec(33, 245), Port::INPUT, module, GenEcho::WAV0_INPUT));
 
     addOutput(Port::create<PJ301MPort>(Vec(33, 275), Port::OUTPUT, module, GenEcho::SINE_OUTPUT));
