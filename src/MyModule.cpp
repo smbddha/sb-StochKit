@@ -9,7 +9,8 @@ struct MyModule : Module {
     BPTS_PARAM,
     GRAT_PARAM,
     TRIG_PARAM,
-		NUM_PARAMS
+		ENVS_PARAM,
+    NUM_PARAMS
 	};
 	enum InputIds {
 		WAV0_INPUT,
@@ -36,6 +37,8 @@ struct MyModule : Module {
   SchmittTrigger smpTrigger;
   GendyOscillator go;
 
+  EnvType env = (EnvType) 1;
+
   /*
    * GENDY VARS
    */
@@ -58,6 +61,13 @@ void MyModule::step() {
 
   int new_nbpts = clamp((int) params[BPTS_PARAM].value, 3, MAX_BPTS);
   if (new_nbpts != go.num_bpts) go.num_bpts = new_nbpts;
+
+  int env_next = (int) params[ENVS_PARAM].value + 1;
+  if (env != (EnvType) env_next) {
+    debug("Switching to env type: %d", env_next);
+    env = (EnvType) env_next;
+    go.env.switchEnvType(env);
+  }
 
   //if (phase >= 1.0) debug("PITCH PARAM: %f\n", (float) params[PITCH_PARAM].value);
 
@@ -85,7 +95,9 @@ struct MyModuleWidget : ModuleWidget {
 		addChild(Widget::create<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 		addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 6 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-		addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(40, 140), module, MyModule::FREQ_PARAM, -1.0, 1.0, 0.0));
+    addParam(ParamWidget::create<CKSSThree>(Vec(110, 240), module, MyModule::ENVS_PARAM, 0.0f, 2.0f, 0.0f));
+		
+    addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(40, 140), module, MyModule::FREQ_PARAM, -1.0, 1.0, 0.0));
     addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(110, 140), module, MyModule::STEP_PARAM, 0.0, 1.0, 0.9));
     addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(40, 200), module, MyModule::GRAT_PARAM, 0.7, 1.3, 0.0));
     addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(110, 200), module, MyModule::BPTS_PARAM, 3, MAX_BPTS, 0));

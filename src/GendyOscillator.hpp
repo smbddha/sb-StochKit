@@ -46,7 +46,7 @@ namespace rack {
 
     Wavetable sample;
     Wavetable env = Wavetable(SIN); 
-    Wavetable env_next = Wavetable(SIN);
+    //Wavetable env_next = Wavetable(SIN);
 
     float amp_out = 0.f;
 
@@ -86,7 +86,7 @@ namespace rack {
       if (GRAN_ON) {
         //printf("SAMPLE: %f, off: %f\n", sample.get(off), off);
         g_amp = amp + (env.get(g_idx) * sample.get(off));
-        g_amp_next = amp_next + (env_next.get(g_idx_next) * sample.get(off_next));
+        g_amp_next = amp_next + (env.get(g_idx_next) * sample.get(off_next));
 
         // linear interpolation
         amp_out = ((1.0 - phase) * g_amp) + (phase * g_amp_next); 
