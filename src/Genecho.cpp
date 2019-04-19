@@ -19,7 +19,8 @@ struct GenEcho : Module {
 	};
 	enum InputIds {
 		WAV0_INPUT,
-		NUM_INPUTS
+		GATE_INPUT,
+    NUM_INPUTS
 	};
 	enum OutputIds {
 		SINE_OUTPUT,
@@ -46,6 +47,7 @@ struct GenEcho : Module {
   };
 
   SchmittTrigger smpTrigger;
+  SchmittTrigger gTrigger;
 
   float *sample = NULL;
   float *_sample = NULL;
@@ -53,7 +55,9 @@ struct GenEcho : Module {
   unsigned int channels;
   unsigned int sampleRate;
   drwav_uint64 totalPCMFrameCount;
-  
+ 
+  unsigned int sample_size = 0;
+
   State state = LOADING;
   unsigned int idx = 0;
 
@@ -69,7 +73,7 @@ struct GenEcho : Module {
   float mDurs[MAX_BPTS] = {0.f};
   float mOffs[MAX_BPTS] = {0.f};
 
-  Wavetable env = Wavetable(HANN); 
+  Wavetable env = Wavetable(TRI); 
 
   unsigned int index = 0;
   
@@ -78,7 +82,11 @@ struct GenEcho : Module {
   float amp_next = 0.f;
   float g_idx = 0.f; 
   float g_idx_next = 0.5f;
-  
+ 
+  // when true read in from wav0_input and store in the sample buffer
+  bool sampling = false;
+  unsigned int s_i = 0;
+
   // For more advanced Module features, read Rack's engine.hpp header file
 	// - toJson, fromJson: serialization of internal data
 	// - onSampleRateChange: event triggered by a change of sample rate
@@ -108,6 +116,15 @@ void GenEcho::step() {
     for (unsigned int i=0; i<MAX_BPTS; i++) mAmps[i] = 0.f;
   }
 
+  // handle sample trigger through gate 
+	if (gTrigger.process(inputs[GATE_INPUT].value)) {
+    debug("TRIGGERED");
+    sample_size = MAX_SAMPLE_SIZE; 
+    sampling = true;
+    index = 0;
+    s_i = 0;
+  }
+
   if (state == LOADING) {
     // reads in the sample file and stores in the sample float arry
     // TODO
@@ -120,10 +137,23 @@ void GenEcho::step() {
     }
 
     debug("totalPCMFrameCount: %d ; MAX_BPTS: %d ; RATIO for 150: %d", totalPCMFrameCount, MAX_BPTS, totalPCMFrameCount / bpt_spc);
+    sample_size = (unsigned int) totalPCMFrameCount;
     num_bpts = totalPCMFrameCount / bpt_spc;
     state = GENERATING;
   } else if (state==GENERATING) {
     //debug("-- PHASE: %f ; G_IDX: %f ; G_IDX_NEXT: %f", phase, g_idx, g_idx_next);
+    
+    // can be sampling but still output, just at a 1 sample delay
+    // or will there even be a delay ??
+    if (sampling) {
+      if (s_i >= sample_size) {
+        sampling = false;
+      } else {
+        sample[s_i] = inputs[WAV0_INPUT].value; 
+        _sample[s_i] = sample[s_i];
+      } 
+    }
+    
     if (phase >= 1.0) {
       phase -= 1.0;
 
@@ -143,7 +173,7 @@ void GenEcho::step() {
     sample[idx] = wrap(sample[idx] + (amp * env.get(g_idx)), -1.f, 1.f);
     amp_out = sample[idx];
   
-    idx = (idx + 1) % (unsigned int) totalPCMFrameCount;
+    idx = (idx + 1) % sample_size;
     g_idx = fmod(g_idx + (1.f / (4.f * env_dur)), 1.f);
     g_idx_next = fmod(g_idx_next + (1.f / (4.f * env_dur)), 1.f);
     
@@ -167,7 +197,9 @@ struct GenEchoWidget : ModuleWidget {
     addParam(ParamWidget::create<CKD6>(Vec(40, 70), module, GenEcho::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
     addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(40, 140), module, GenEcho::BSPC_PARAM, 800, 3000, 0.0));
     addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(110, 140), module, GenEcho::STEP_PARAM, 0.0, 0.6, 0.9));
-    
+   
+    addInput(Port::create<PJ301MPort>(Vec(33, 245), Port::INPUT, module, GenEcho::WAV0_INPUT));
+
     addOutput(Port::create<PJ301MPort>(Vec(33, 275), Port::OUTPUT, module, GenEcho::SINE_OUTPUT));
 	}
 };

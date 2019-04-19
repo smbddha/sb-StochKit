@@ -76,7 +76,7 @@ void MyModule::step() {
   }
   
   go.max_amp_step = rescale(params[STEP_PARAM].value, 0.0, 1.0, 0.05, 0.3);
-  go.freq_mul = rescale(params[FREQ_PARAM].value, -1.0, 1.0, 0.5, 4.0);
+  go.freq_mul = rescale(params[FREQ_PARAM].value, -1.0, 1.0, 0.05, 4.0);
   go.g_rate = params[GRAT_PARAM].value * 5.f;
 
   go.process(deltaTime);

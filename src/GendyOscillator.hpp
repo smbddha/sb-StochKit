@@ -19,7 +19,7 @@ namespace rack {
     int max_freq = 1000;
 
     float mAmps[MAX_BPTS] = {0.f};
-    float mDurs[MAX_BPTS] = {0.f};
+    float mDurs[MAX_BPTS] = {1.f};
     float mOffs[MAX_BPTS] = {0.f};
 
     int index = 0;
@@ -27,7 +27,7 @@ namespace rack {
     float amp_next = mAmps[0];
     
     float max_amp_step = 0.05;
-    float max_dur_step = 0.0;
+    float max_dur_step = 0.05;
     float speed = 0.0;
     float rate = 0.0;
 
@@ -67,7 +67,7 @@ namespace rack {
 
         /* adjust vals */
         mAmps[index] = wrap(mAmps[index] + (max_amp_step * randomNormal()), -1.0f, 1.0f); 
-        mDurs[index] = mDurs[index] + (max_dur_step * randomNormal());
+        mDurs[index] = wrap(mDurs[index] + (max_dur_step * randomNormal()), 0.5f, 1.5f);
      
         amp_next = mAmps[index];
         rate = mDurs[index];
