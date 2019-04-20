@@ -1,10 +1,14 @@
 #include "Gendy.hpp"
 
+#include "util/common.hpp"
+#include "dsp/digital.hpp"
+
 struct StochStepper : Module {
 	enum ParamIds {
     NUM_PARAMS
 	};
 	enum InputIds {
+    STEP_INPUT, 
     NUM_INPUTS
 	};
 	enum OutputIds {
@@ -19,6 +23,7 @@ struct StochStepper : Module {
 	float blinkPhase = 0.0;
 
   enum StepTypes {
+    STEP,
     RAMP,
     LINEAR,
     EXP,
@@ -26,11 +31,12 @@ struct StochStepper : Module {
   };
 
   SchmittTrigger stepTrigger;
-  GendyOscillator go;
 
   float amp = 0.f;
   float amp_next = 0.f;
   float amp_out = 0.f;
+
+  StepTypes t_step = STEP;
 
   StochStepper() : Module(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {
   }
@@ -41,10 +47,12 @@ struct StochStepper : Module {
 
 void StochStepper::step() {
 	// Implement a simple sine oscillator
-  float deltaTime = engineGetSampleTime();
+  //float deltaTime = engineGetSampleTime();
   
   if (stepTrigger.process(inputs[STEP_INPUT].value / 2.f)) {
     switch (t_step) {
+      case STEP:
+        break;
       case RAMP:
         break;
       case LINEAR:

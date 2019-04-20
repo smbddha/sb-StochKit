@@ -10,4 +10,4 @@ extern Plugin *plugin;
 extern Model *modelMyModule;
 extern Model *modelGenEcho;
 extern Model *modelStitcher;
-//extern Model *stochasticGenerator;
+extern Model *modelStochStepper;
