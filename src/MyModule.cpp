@@ -96,8 +96,6 @@ void MyModule::step() {
   outputs[SINE_OUTPUT].value = 5.0f * go.out();
 }
 
-
-
 struct MyModuleWidget : ModuleWidget {
 	MyModuleWidget(MyModule *module) : ModuleWidget(module) {
 		setPanel(SVG::load(assetPlugin(plugin, "res/MyModule3.svg")));

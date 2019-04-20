@@ -125,6 +125,7 @@ void GenEcho::step() {
     debug("TRIGGERED");
     for (unsigned int i=0; i<MAX_BPTS; i++) mAmps[i] = 0.f;
     sample_size = MAX_SAMPLE_SIZE; 
+    num_bpts = sample_size / bpt_spc;
     sampling = true;
     idx = 0;
     s_i = 0;

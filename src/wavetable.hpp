@@ -56,6 +56,7 @@ namespace rack {
     }
 
     void switchEnvType(EnvType e) {
+      debug("ENV TYPE: %d", e);
       // don't switch if already that env
       if (et != e) {
         et = e;
