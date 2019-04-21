@@ -1,3 +1,11 @@
+/*
+ * GendyOscillator.hpp
+ * Samuel Laing - 2019
+ *
+ * Implementation of a singular generator using granular stochastic
+ * dynamic synthesis
+ */
+
 #ifndef __GENDYOSC_HPP__
 #define __GENDYOSC_HPP__
 
@@ -18,13 +26,13 @@ namespace rack {
     int min_freq = 30; 
     int max_freq = 1000;
 
-    float mAmps[MAX_BPTS] = {0.f};
-    float mDurs[MAX_BPTS] = {1.f};
-    float mOffs[MAX_BPTS] = {0.f};
+    float amps[MAX_BPTS] = {0.f};
+    float durs[MAX_BPTS] = {1.f};
+    float offs[MAX_BPTS] = {0.f};
 
     int index = 0;
     float amp = 0.0; 
-    float amp_next = mAmps[0];
+    float amp_next = amps[0];
     
     float max_amp_step = 0.05;
     float max_dur_step = 0.05;
@@ -46,7 +54,6 @@ namespace rack {
 
     Wavetable sample;
     Wavetable env = Wavetable(SIN); 
-    //Wavetable env_next = Wavetable(SIN);
 
     float amp_out = 0.f;
 
@@ -66,15 +73,15 @@ namespace rack {
         last_flag = index == num_bpts - 1;
 
         /* adjust vals */
-        mAmps[index] = wrap(mAmps[index] + (max_amp_step * randomNormal()), -1.0f, 1.0f); 
-        mDurs[index] = wrap(mDurs[index] + (max_dur_step * randomNormal()), 0.5f, 1.5f);
+        amps[index] = wrap(amps[index] + (max_amp_step * randomNormal()), -1.0f, 1.0f); 
+        durs[index] = wrap(durs[index] + (max_dur_step * randomNormal()), 0.5f, 1.5f);
      
-        amp_next = mAmps[index];
-        rate = mDurs[index];
+        amp_next = amps[index];
+        rate = durs[index];
 
         /* step/adjust grain sample offsets */
         off = off_next;
-        off_next = mOffs[index];
+        off_next = offs[index];
     
         g_idx = g_idx_next;
         g_idx_next = 0.0;
@@ -104,8 +111,6 @@ namespace rack {
       //  -> MAKE CONTROLLABLE 
       off = fmod(off + (g_rate * 1e-1 * (1.f / 48000.f)), 1.f);
       off_next = fmod(off_next + (g_rate * 1e-4 * (1.f / 48000.f)), 1.f);
-
-      //printf("new off: %f\n", off);
       
       phase += speed;
     }

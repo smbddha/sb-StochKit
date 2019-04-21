@@ -38,6 +38,7 @@ float gRand(DistributionEqs type) {
 
 struct StochStepper : Module {
 	enum ParamIds {
+    STEP_PARAM,
     NUM_PARAMS
 	};
 	enum InputIds {
@@ -91,8 +92,6 @@ void StochStepper::step() {
     case STEP:
       break;
     case RAMP:
-      break;
-    case LINEAR:
       break;
     case EXP:
       break;

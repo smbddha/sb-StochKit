@@ -1,3 +1,12 @@
+/*
+ * GenEcho (Gendy / Grandy Echo module)
+ * Samuel Laing - 2019
+ *
+ * VCV Rack module that uses granular stochastic methods to alter a sample
+ * sample can be loaded (wav files only) or be  piped in from another 
+ * module
+ */
+
 #include "util/common.hpp"
 #include "dsp/digital.hpp"
 
@@ -23,6 +32,8 @@ struct GenEcho : Module {
 	enum InputIds {
 		WAV0_INPUT,
 		GATE_INPUT,
+    RSET_INPUT,
+    BSPC_INPUT,
     NUM_INPUTS
 	};
 	enum OutputIds {
@@ -52,6 +63,7 @@ struct GenEcho : Module {
   SchmittTrigger smpTrigger;
   SchmittTrigger gTrigger;
   SchmittTrigger g2Trigger;
+  SchmittTrigger resetTrigger;
 
   float *sample = NULL;
   float *_sample = NULL;
@@ -60,7 +72,7 @@ struct GenEcho : Module {
   unsigned int sampleRate;
   drwav_uint64 totalPCMFrameCount;
  
-  unsigned int sample_size = 0;
+  unsigned int sample_size = 1;
 
   State state = LOADING;
   unsigned int idx = 0;
@@ -115,8 +127,9 @@ void GenEcho::step() {
   max_amp_step = params[ASTP_PARAM].value;
   max_dur_step = params[DSTP_PARAM].value;
 
-  bpt_spc = (unsigned int) params[BSPC_PARAM].value;
+  bpt_spc = (unsigned int) params[BSPC_PARAM].value + 800;
   num_bpts = totalPCMFrameCount / bpt_spc;
+  
   env_dur = bpt_spc / 2;
 
   // snap knob for selecting envelope for the grain
@@ -128,24 +141,26 @@ void GenEcho::step() {
   }
 
   // handle sample reset
-  if (smpTrigger.process(params[TRIG_PARAM].value)) {
+  if (smpTrigger.process(params[TRIG_PARAM].value)
+      || resetTrigger.process(inputs[RSET_INPUT].value / 2.f)) {
     for (unsigned int i=0; i<sample_size; i++) sample[i] = _sample[i];
     for (unsigned int i=0; i<MAX_BPTS; i++) mAmps[i] = 0.f;
+    for (unsigned int i=0; i<MAX_BPTS; i++) mDurs[i] = 1.f;
   }
 
   // handle sample trigger through gate 
-	/*
-  if (gTrigger.process(params[GATE_PARAM].value 
-      || g2Trigger.process(inputs[GATE_INPUT].value))) {
+  if (g2Trigger.process(inputs[GATE_INPUT].value / 2.f)) {
     debug("TRIGGERED");
+
     for (unsigned int i=0; i<MAX_BPTS; i++) mAmps[i] = 0.f;
+    for (unsigned int i=0; i<MAX_BPTS; i++) mDurs[i] = 1.f;
+
     sample_size = MAX_SAMPLE_SIZE; 
     num_bpts = sample_size / bpt_spc;
     sampling = true;
     idx = 0;
     s_i = 0;
   }
-  */
 
   if (state == LOADING) {
     // reads in the sample file and stores in the sample float arry
@@ -167,6 +182,7 @@ void GenEcho::step() {
     
     // can be sampling but still output, just at a 1 sample delay
     // or will there even be a delay ??
+    // -> actually no delay noice
     if (sampling) {
       if (s_i >= sample_size - 50) {
         float x,y,p;
@@ -229,9 +245,9 @@ struct GenEchoWidget : ModuleWidget {
 	GenEchoWidget(GenEcho *module) : ModuleWidget(module) {
 		setPanel(SVG::load(assetPlugin(plugin, "res/GenEcho.svg")));
    
-    addParam(ParamWidget::create<CKD6>(Vec(53, 50.15), module, GenEcho::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
+    addParam(ParamWidget::create<CKD6>(Vec(51.210, 80.46), module, GenEcho::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
     
-    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(24, 97.43), module, GenEcho::BSPC_PARAM, 800, 3000, 0.0));
+    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(5, 104), module, GenEcho::BSPC_PARAM, 0, 2200, 0.0));
     
     addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.883, 178.20), module, GenEcho::ASTP_PARAM, 0.0, 0.6, 0.9));
     addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(51.883, 178.20), module, GenEcho::DSTP_PARAM, 0.0, 0.1, 0.9));
@@ -241,6 +257,8 @@ struct GenEchoWidget : ModuleWidget {
     //addParam(ParamWidget::create<CKD6>(Vec(110, 70), module, GenEcho::GATE_PARAM, 0.0f, 1.0f, 0.0f));
    
     addInput(Port::create<PJ301MPort>(Vec(9.210, 48.29), Port::INPUT, module, GenEcho::GATE_INPUT));
+    addInput(Port::create<PJ301MPort>(Vec(51.210, 48.29), Port::INPUT, module, GenEcho::RSET_INPUT));
+    addInput(Port::create<PJ301MPort>(Vec(51.210, 129.31), Port::INPUT, module, GenEcho::BSPC_INPUT));
     addInput(Port::create<PJ301MPort>(Vec(30.567, 297.56), Port::INPUT, module, GenEcho::WAV0_INPUT));
 
     addOutput(Port::create<PJ301MPort>(Vec(32.17, 338.97), Port::OUTPUT, module, GenEcho::SINE_OUTPUT));

@@ -1,3 +1,11 @@
+/*
+ * MyModule.cpp
+ * Samuel Laing - 2019
+ *
+ * VCV Rack Module with a single GRANDY oscillator
+ *
+ */
+
 #include "Gendy.hpp"
 
 #include "GendyOscillator.hpp"
@@ -33,12 +41,6 @@ struct MyModule : Module {
 
 	//float phase = 1.0;
 	float blinkPhase = 0.0;
-
-  enum InterpolationTypes {
-    LINEAR,
-    COSINE,
-    GRANULAR
-  };
 
   SchmittTrigger smpTrigger;
   GendyOscillator go;
@@ -96,6 +98,7 @@ void MyModule::step() {
   outputs[SINE_OUTPUT].value = 5.0f * go.out();
 }
 
+
 struct MyModuleWidget : ModuleWidget {
 	MyModuleWidget(MyModule *module) : ModuleWidget(module) {
 		setPanel(SVG::load(assetPlugin(plugin, "res/MyModule3.svg")));
@@ -113,8 +116,7 @@ struct MyModuleWidget : ModuleWidget {
     addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(14, 177.16), module, MyModule::DSTP_PARAM, 0.0, 1.0, 0.9));
     addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(92, 177.16), module, MyModule::STEP_PARAM, 0.0, 1.0, 0.9));
     
-    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(124.781, 275.91), module, MyModule::GRAT_PARAM, 0.7, 1.3, 0.0));
-    
+    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(124.781, 275.91), module, MyModule::GRAT_PARAM, 0.7, 2.0, 0.0));
     addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(12, 275.83), module, MyModule::ENVS_PARAM, 1.0f, 4.0f, 4.0f));
 	
     // signal inputs
