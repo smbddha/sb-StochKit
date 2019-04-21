@@ -15,7 +15,9 @@ struct GenEcho : Module {
     BSPC_PARAM,
 		TRIG_PARAM,
     GATE_PARAM, 
-    STEP_PARAM,
+    ASTP_PARAM,
+    DSTP_PARAM,
+    ENVS_PARAM,
     NUM_PARAMS
 	};
 	enum InputIds {
@@ -72,14 +74,16 @@ struct GenEcho : Module {
   unsigned int num_bpts = 0;
 
   float mAmps[MAX_BPTS] = {0.f};
-  float mDurs[MAX_BPTS] = {0.f};
-  float mOffs[MAX_BPTS] = {0.f};
+  float mDurs[MAX_BPTS] = {1.f};
+  //float mOffs[MAX_BPTS] = {0.f};
 
   Wavetable env = Wavetable(TRI); 
 
   unsigned int index = 0;
   
   float max_amp_step = 0.05f;
+  float max_dur_step = 0.05f;
+
   float amp = 0.f; 
   float amp_next = 0.f;
   float g_idx = 0.f; 
@@ -107,11 +111,21 @@ void GenEcho::step() {
   //float deltaTime = engineGetSampleTime();
   float amp_out = 0.0;
 
-  max_amp_step = params[STEP_PARAM].value;
+
+  max_amp_step = params[ASTP_PARAM].value;
+  max_dur_step = params[DSTP_PARAM].value;
 
   bpt_spc = (unsigned int) params[BSPC_PARAM].value;
   num_bpts = totalPCMFrameCount / bpt_spc;
   env_dur = bpt_spc / 2;
+
+  // snap knob for selecting envelope for the grain
+  int env_num = (int) clamp(roundf(params[ENVS_PARAM].value), 1.0f, 8.0f);
+
+  if (env.et != (EnvType) env_num) {
+    debug("Switching to env type: %d", env_num);
+    env.switchEnvType((EnvType) env_num);
+  }
 
   // handle sample reset
   if (smpTrigger.process(params[TRIG_PARAM].value)) {
@@ -120,7 +134,8 @@ void GenEcho::step() {
   }
 
   // handle sample trigger through gate 
-	if (gTrigger.process(params[GATE_PARAM].value 
+	/*
+  if (gTrigger.process(params[GATE_PARAM].value 
       || g2Trigger.process(inputs[GATE_INPUT].value))) {
     debug("TRIGGERED");
     for (unsigned int i=0; i<MAX_BPTS; i++) mAmps[i] = 0.f;
@@ -130,6 +145,7 @@ void GenEcho::step() {
     idx = 0;
     s_i = 0;
   }
+  */
 
   if (state == LOADING) {
     // reads in the sample file and stores in the sample float arry
@@ -181,6 +197,8 @@ void GenEcho::step() {
       mAmps[index] = wrap(mAmps[index] + (max_amp_step * randomNormal()), -1.0f, 1.0f); 
       amp_next = mAmps[index];
 
+      mDurs[index] = wrap(mDurs[index] + (max_dur_step * randomNormal()), 0.8, 1.2);
+
       // step/adjust grain sample offsets 
       g_idx = g_idx_next;
       g_idx_next = 0.0;
@@ -194,7 +212,7 @@ void GenEcho::step() {
     g_idx = fmod(g_idx + (1.f / (4.f * env_dur)), 1.f);
     g_idx_next = fmod(g_idx_next + (1.f / (4.f * env_dur)), 1.f);
     
-    phase += 1.f / (float) bpt_spc;
+    phase += 1.f / (mDurs[index] * bpt_spc);
   }
 
   outputs[SINE_OUTPUT].value = amp_out;
@@ -209,18 +227,24 @@ float GenEcho::wrap(float in, float lb, float ub) {
 
 struct GenEchoWidget : ModuleWidget {
 	GenEchoWidget(GenEcho *module) : ModuleWidget(module) {
-		setPanel(SVG::load(assetPlugin(plugin, "res/MyModule3.svg")));
-    
-    addParam(ParamWidget::create<CKD6>(Vec(110, 70), module, GenEcho::GATE_PARAM, 0.0f, 1.0f, 0.0f));
-    addParam(ParamWidget::create<CKD6>(Vec(40, 70), module, GenEcho::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
-    addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(40, 170), module, GenEcho::BSPC_PARAM, 800, 3000, 0.0));
-    addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(110, 170), module, GenEcho::STEP_PARAM, 0.0, 0.6, 0.9));
+		setPanel(SVG::load(assetPlugin(plugin, "res/GenEcho.svg")));
    
-    addInput(Port::create<PJ301MPort>(Vec(110, 120), Port::INPUT, module, GenEcho::GATE_INPUT));
-    addInput(Port::create<PJ301MPort>(Vec(33, 245), Port::INPUT, module, GenEcho::WAV0_INPUT));
+    addParam(ParamWidget::create<CKD6>(Vec(53, 50.15), module, GenEcho::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
+    
+    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(24, 97.43), module, GenEcho::BSPC_PARAM, 800, 3000, 0.0));
+    
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.883, 178.20), module, GenEcho::ASTP_PARAM, 0.0, 0.6, 0.9));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(51.883, 178.20), module, GenEcho::DSTP_PARAM, 0.0, 0.1, 0.9));
+    
+    addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(9.883, 257.18), module, GenEcho::ENVS_PARAM, 1.f, 4.f, 4.f));
+    
+    //addParam(ParamWidget::create<CKD6>(Vec(110, 70), module, GenEcho::GATE_PARAM, 0.0f, 1.0f, 0.0f));
+   
+    addInput(Port::create<PJ301MPort>(Vec(9.210, 48.29), Port::INPUT, module, GenEcho::GATE_INPUT));
+    addInput(Port::create<PJ301MPort>(Vec(30.567, 297.56), Port::INPUT, module, GenEcho::WAV0_INPUT));
 
-    addOutput(Port::create<PJ301MPort>(Vec(33, 275), Port::OUTPUT, module, GenEcho::SINE_OUTPUT));
-	}
+    addOutput(Port::create<PJ301MPort>(Vec(32.17, 338.97), Port::OUTPUT, module, GenEcho::SINE_OUTPUT));
+  }
 };
 
 
