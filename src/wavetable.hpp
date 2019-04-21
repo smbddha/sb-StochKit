@@ -1,3 +1,12 @@
+/*
+ * Wavetable.hpp
+ * Samuel Laing - 2019
+ *
+ * Defines the Wavetable struct that is used to hold windows for
+ * granular functions. Type of envelope / window is specified by a
+ * EnvType enum
+ */
+
 #ifndef __WAVETABLE_HPP__
 #define __WAVETABLE_HPP__
 
@@ -39,7 +48,7 @@ namespace rack {
           initSinWav();
           break;
         case TRI:
-          initDefaultEnv();
+          initTriEnv();
           break;
         case HANN:
           initHannEnv();
@@ -52,6 +61,10 @@ namespace rack {
           break;
         default:
           initSinWav();
+      }
+
+      for (int i=0; i<TABLE_SIZE; i+=20) {
+        debug("%d:  %f", i, table[i]);
       }
     }
 
@@ -73,13 +86,11 @@ namespace rack {
       }
     }
 
-    void initDefaultEnv() {
+    void initTriEnv() {
       float phase = 0.f;
       for (int i=0; i<TABLE_SIZE; i++) {
-        // TODO
-        // make env table
-        if (phase < 0.5f) table[i] = (float) i / TABLE_SIZE;
-        else table[i] = ((-1.f * i) / TABLE_SIZE) + 2.f;
+        if (phase < 0.5f) table[i] = ((2.f * i) / TABLE_SIZE);
+        else table[i] = ((-2.f * i) / TABLE_SIZE) + 2.f;
         phase += 1.f / TABLE_SIZE;
       }
     }
@@ -94,12 +105,12 @@ namespace rack {
     void initWelchEnv() {
       float ts = (float) TABLE_SIZE;
       for (int i=0; i<TABLE_SIZE; i++) {
-        table[i] = 1.f - pow((((float) i / ts) - (ts / 2.f)) / (ts / 2.f), 2); 
+        table[i] = 1.f - pow(((float) i - (ts / 2.f)) / (ts / 2.f), 2); 
       }
     }
 
     void initTukeyEnv() {
-      float p1,p2,N,alpha,n;
+      float p1,p2,N,alpha;
 
       alpha = 0.5f;
 
@@ -108,13 +119,12 @@ namespace rack {
       p2 = N * (1 - (alpha / 2));
 
       for (int i=0; i<TABLE_SIZE; i++) {
-        n = (float) i / N;
-        if (n < p1) {
-          table[i] = 0.5f * (1 + cosf(M_PI * (((2 * n) / (alpha * N)) - 1)));
+        if (i < p1) {
+          table[i] = 0.5f * (1 + cosf(M_PI * (((2 * i) / (alpha * N)) - 1)));
         }
-        else if (n <= p2) table[i] = 1.f; 
+        else if (i <= p2) table[i] = 1.f; 
         else {
-          table[i] = 0.5f * (1 + cosf(M_PI * (((2 * n) / (alpha * N)) - (2 / alpha) + 1)));
+          table[i] = 0.5f * (1 + cosf(M_PI * (((2 * i) / (alpha * N)) - (2 / alpha) + 1)));
         }
       }
     }
