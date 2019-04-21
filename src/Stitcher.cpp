@@ -18,11 +18,17 @@ struct Stitcher : Module {
     ENUMS(B_PARAM, NUM_OSCS),
     ENUMS(S_PARAM, NUM_OSCS),
     ENUMS(G_PARAM, NUM_OSCS),
+    ENUMS(ST_PARAM, NUM_OSCS),
     NUM_PARAMS
 	};
 	enum InputIds {
 		WAV0_INPUT,
-		NUM_INPUTS
+		ENUMS(F_INPUT, NUM_OSCS),
+    ENUMS(B_INPUT, NUM_OSCS),
+    ENUMS(S_INPUT, NUM_OSCS),
+    ENUMS(G_INPUT, NUM_OSCS),
+    ENUMS(ST_INPUT, NUM_OSCS),
+    NUM_INPUTS
 	};
 	enum OutputIds {
 		SINE_OUTPUT,
@@ -41,6 +47,12 @@ struct Stitcher : Module {
   GendyOscillator gos[NUM_OSCS];
   int osc_idx = 0;
 
+  // allow an adjustable number of oscillators
+  // to be used 2 -> 4
+  int curr_num_oscs = NUM_OSCS;
+  int stutters[NUM_OSCS] = {1};
+  int current_stutter = 1;
+
   float phase = 0.f;
   float amp = 0.f;
   float amp_next = 0.f;
@@ -49,7 +61,6 @@ struct Stitcher : Module {
 
   bool is_swapping = false;
   int stutter = 1;
-  int s_count = stutter;
 
   Stitcher() : Module(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {
   }
@@ -64,7 +75,13 @@ void Stitcher::step() {
   
   //if (phase >= 1.0) debug("PITCH PARAM: %f\n", (float) params[PITCH_PARAM].value);
 
+  // TODO
+  // add global controls
+
+  // read in all the parameters for each oscillator
   for (int i=0; i<NUM_OSCS; i++) {
+    stutters[i] = (int) params[ST_PARAM + i].value;
+    
     gos[i].max_amp_step = rescale(params[S_PARAM + i].value, 0.0, 1.0, 0.05, 0.3);
     gos[i].freq_mul = rescale(params[F_PARAM + i].value, -1.0, 1.0, 0.5, 4.0);
     gos[i].g_rate = params[G_PARAM + i].value * 5.f;
@@ -89,16 +106,19 @@ void Stitcher::step() {
     amp_out = gos[osc_idx].out();
     
     if (gos[osc_idx].last_flag) {
-      s_count--;
-      if (s_count < 0) {
+      current_stutter--;
+      if (current_stutter < 1) {
         amp = amp_out;
         speed = gos[osc_idx].speed;
         osc_idx = (osc_idx + 1) % NUM_OSCS;
+        
         debug("-- new idx %d, bpts: %d, freq_mul: %d", osc_idx, gos[osc_idx].num_bpts, gos[osc_idx].freq_mul); 
+
         gos[osc_idx].process(deltaTime);
         amp_next = gos[osc_idx].out();  
-        
-        s_count = stutter;
+       
+        current_stutter = stutters[osc_idx];
+
         phase = 0.f;
         is_swapping = true;
       }
@@ -122,10 +142,14 @@ struct StitcherWidget : ModuleWidget {
     int index = 0;
     for (int i = 0; i < NUM_OSCS/2; i++) {
 			for (int j = 0; j < NUM_OSCS/2; j++) {
-        addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(30+(i*115), 100+(j*115)), module, Stitcher::F_PARAM + index, -1.0, 1.0, 0.0));
-        addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(30+(i*115), 140+(j*115)), module, Stitcher::S_PARAM + index, 0.0, 1.0, 0.9));
-        addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(90+(i*115), 100+(j*115)), module, Stitcher::G_PARAM + index, 0.7, 1.3, 0.0));
-        addParam(ParamWidget::create<Davies1900hBlackKnob>(Vec(90+(i*115), 140+(j*115)), module, Stitcher::B_PARAM + index, 3, MAX_BPTS, 0));
+        addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(30+(i*115), 100+(j*115)), module, Stitcher::F_PARAM + index, -1.0, 1.0, 0.0));
+        addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(30+(i*115), 140+(j*115)), module, Stitcher::S_PARAM + index, 0.0, 1.0, 0.9));
+        
+        // stutter param
+        addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(60+(i*115), 120+(j*115)), module, Stitcher::ST_PARAM + index, 1.f, 5.f, 5.f));
+
+        addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(90+(i*115), 100+(j*115)), module, Stitcher::G_PARAM + index, 0.7, 1.3, 0.0));
+        addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(90+(i*115), 140+(j*115)), module, Stitcher::B_PARAM + index, 3, MAX_BPTS, 0));
         index++;
       }
     }
