@@ -13,7 +13,7 @@
 struct MyModule : Module {
 	enum ParamIds {
 		FREQ_PARAM,
-    STEP_PARAM,
+    ASTP_PARAM,
     DSTP_PARAM,
     BPTS_PARAM,
     GRAT_PARAM,
@@ -23,7 +23,7 @@ struct MyModule : Module {
 	};
 	enum InputIds {
 		FREQ_INPUT,
-    STEP_INPUT,
+    ASTP_INPUT,
     DSTP_INPUT,
     BPTS_INPUT,
     GRAT_INPUT,
@@ -47,9 +47,11 @@ struct MyModule : Module {
 
   EnvType env = (EnvType) 1;
 
-  /*
-   * GENDY VARS
-   */
+  float freq_sig = 1.f;
+  float astp_sig = 1.f;
+  float dstp_sig = 1.f;
+  float grat_sig = 1.f;
+  float envs_sig = 1.f;
 
   // For more advanced Module features, read Rack's engine.hpp header file
 	// - toJson, fromJson: serialization of internal data
@@ -64,7 +66,6 @@ struct MyModule : Module {
 };
 
 void MyModule::step() {
-	// Implement a simple sine oscillator
   float deltaTime = engineGetSampleTime();
 
   int new_nbpts = clamp((int) params[BPTS_PARAM].value, 3, MAX_BPTS);
@@ -88,7 +89,13 @@ void MyModule::step() {
  
   // TODO
   // accept modulation of signal inputs for each parameter
-  go.max_amp_step = rescale(params[STEP_PARAM].value, 0.0, 1.0, 0.05, 0.3);
+  freq_sig = inputs[FREQ_INPUT].value;
+  astp_sig = inputs[ASTP_INPUT].value;
+  dstp_sig = inputs[DSTP_INPUT].value;
+  grat_sig = inputs[GRAT_INPUT].value;
+  envs_sig = inputs[ENVS_INPUT].value;
+  
+  go.max_amp_step = rescale(params[ASTP_PARAM].value, 0.0, 1.0, 0.05, 0.3);
   go.max_dur_step = rescale(params[DSTP_PARAM].value, 0.0, 1.0, 0.01, 0.3);
   go.freq_mul = rescale(params[FREQ_PARAM].value, -1.0, 1.0, 0.05, 4.0);
   go.g_rate = params[GRAT_PARAM].value * 5.f;
@@ -109,12 +116,13 @@ struct MyModuleWidget : ModuleWidget {
 		addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 6 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
     //addParam(ParamWidget::create<CKSSThree>(Vec(110, 240), module, MyModule::ENVS_PARAM, 0.0f, 2.0f, 0.0f));
-		
+	
+    // knob params
     addParam(ParamWidget::create<RoundHugeBlackKnob>(Vec(15, 68), module, MyModule::FREQ_PARAM, -1.0, 1.0, 0.0));
     addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(113.328, 62.95), module, MyModule::BPTS_PARAM, 3, MAX_BPTS, 0));
     
     addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(14, 177.16), module, MyModule::DSTP_PARAM, 0.0, 1.0, 0.9));
-    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(92, 177.16), module, MyModule::STEP_PARAM, 0.0, 1.0, 0.9));
+    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(92, 177.16), module, MyModule::ASTP_PARAM, 0.0, 1.0, 0.9));
     
     addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(124.781, 275.91), module, MyModule::GRAT_PARAM, 0.7, 2.0, 0.0));
     addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(12, 275.83), module, MyModule::ENVS_PARAM, 1.0f, 4.0f, 4.0f));
@@ -123,12 +131,13 @@ struct MyModuleWidget : ModuleWidget {
     addInput(Port::create<PJ301MPort>(Vec(79.022, 133.72), Port::INPUT, module, MyModule::FREQ_INPUT));
     addInput(Port::create<PJ301MPort>(Vec(121.022, 133.72), Port::INPUT, module, MyModule::BPTS_INPUT));
     
-    addInput(Port::create<PJ301MPort>(Vec(59.187, 224.25), Port::INPUT, module, MyModule::STEP_INPUT));
+    addInput(Port::create<PJ301MPort>(Vec(59.187, 224.25), Port::INPUT, module, MyModule::ASTP_INPUT));
 		addInput(Port::create<PJ301MPort>(Vec(137.187, 224.25), Port::INPUT, module, MyModule::DSTP_INPUT));
     
     addInput(Port::create<PJ301MPort>(Vec(19.875, 340.42), Port::INPUT, module, MyModule::ENVS_INPUT));
 		addInput(Port::create<PJ301MPort>(Vec(76.210, 285.33), Port::INPUT, module, MyModule::GRAT_INPUT));
 
+    // output signal 
     addOutput(Port::create<PJ301MPort>(Vec(134.003, 334.86), Port::OUTPUT, module, MyModule::SINE_OUTPUT));
 
 		//addChild(ModuleLightWidget::create<MediumLight<RedLight>>(Vec(41, 59), module, MyModule::BLINK_LIGHT));

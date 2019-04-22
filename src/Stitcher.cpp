@@ -19,7 +19,8 @@
 struct Stitcher : Module {
 	enum ParamIds {
 		G_FREQ_PARAM,
-    G_STEP_PARAM,
+    G_ASTP_PARAM,
+    G_DSTP_PARAM,
     G_BPTS_PARAM,
     G_GRAT_PARAM,
     TRIG_PARAM,
@@ -72,7 +73,10 @@ struct Stitcher : Module {
   bool is_swapping = false;
   int stutter = 1;
 
+  // vars for global parameter controls
   float g_freq_mul = 1.0;
+  float g_max_amp_add = 0.f;
+  float g_max_dur_add = 0.f;
 
   Stitcher() : Module(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {
   }
@@ -89,12 +93,16 @@ void Stitcher::step() {
 
   // read in global controls
   g_freq_mul = params[G_FREQ_PARAM].value;
+  g_max_amp_add = params[G_ASTP_PARAM].value;
+  g_max_dur_add = params[G_DSTP_PARAM].value;
 
   // read in all the parameters for each oscillator
   for (int i=0; i<NUM_OSCS; i++) {
     stutters[i] = (int) params[ST_PARAM + i].value;
     
-    gos[i].max_amp_step = rescale(params[S_PARAM + i].value, 0.0, 1.0, 0.05, 0.3);
+    gos[i].max_amp_step = rescale(params[S_PARAM + i].value, 0.0, 1.0, 0.05, 0.3) + g_max_amp_add;
+    gos[i].max_dur_step = g_max_dur_add;
+
     gos[i].freq_mul = rescale(params[F_PARAM + i].value, -1.0, 1.0, 0.5, 4.0) * g_freq_mul;
     gos[i].g_rate = params[G_PARAM + i].value * 5.f;
   
@@ -152,7 +160,7 @@ struct StitcherWidget : ModuleWidget {
 		addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 6 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
     */
 
-		addParam(ParamWidget::create<CKD6>(Vec(40, 70), module, Stitcher::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
+		//addParam(ParamWidget::create<CKD6>(Vec(40, 70), module, Stitcher::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
 
     int index = 0;
     for (int i = 0; i < NUM_OSCS; i++) {
@@ -173,10 +181,16 @@ struct StitcherWidget : ModuleWidget {
     addParam(ParamWidget::create<RoundHugeBlackKnob>(Vec(172.951, 56.23), module, Stitcher::G_FREQ_PARAM, 0.5f, 1.5f, 0.f));
 
     //addInput(Port::create<PJ301MPort>(Vec(33, 245), Port::INPUT, module, Stitcher::WAV0_INPUT));
-		addOutput(Port::create<PJ301MPort>(Vec(33, 275), Port::OUTPUT, module, Stitcher::SINE_OUTPUT));
 
-		addChild(ModuleLightWidget::create<MediumLight<GreenLight>>(Vec(41, 59), module, Stitcher::BLINK_LIGHT));
-	}
+		//addChild(ModuleLightWidget::create<MediumLight<GreenLight>>(Vec(41, 59), module, Stitcher::BLINK_LIGHT));
+	
+    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(166.489, 152.32), module, Stitcher::G_ASTP_PARAM, 0.5f, 1.5f, 0.f));
+    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(218.489, 152.32), module, Stitcher::G_DSTP_PARAM, 0.5f, 1.5f, 0.f));
+    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(166.489, 225.86), module, Stitcher::G_BPTS_PARAM, 0.5f, 1.5f, 0.f));
+    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(218.489, 225.86), module, Stitcher::G_GRAT_PARAM, 0.5f, 1.5f, 0.f));
+
+		addOutput(Port::create<PJ301MPort>(Vec(227, 339), Port::OUTPUT, module, Stitcher::SINE_OUTPUT));
+  }
 };
 
 
