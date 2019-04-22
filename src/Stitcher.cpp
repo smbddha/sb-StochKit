@@ -164,14 +164,14 @@ struct StitcherWidget : ModuleWidget {
 
     int index = 0;
     for (int i = 0; i < NUM_OSCS; i++) {
-      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(6.5, 5+(i*95)), module, Stitcher::F_PARAM + index, -1.0, 1.0, 0.0));
-      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(6.5, 46+(i*95)), module, Stitcher::S_PARAM + index, 0.0, 1.0, 0.9));
+      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.140, 13.81+(i*95)), module, Stitcher::F_PARAM + index, -1.0, 1.0, 0.0));
+      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.140, 59.82+(i*95)), module, Stitcher::S_PARAM + index, 0.0, 1.0, 0.9));
       
       // stutter param
-      addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(94.4, 5+(i*95)), module, Stitcher::ST_PARAM + index, 1.f, 5.f, 5.f));
+      addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(94.489, 24+(i*95)), module, Stitcher::ST_PARAM + index, 1.f, 5.f, 5.f));
 
-      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(50.5, 5+(i*95)), module, Stitcher::G_PARAM + index, 0.7, 1.3, 0.0));
-      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(50.5, 46+(i*95)), module, Stitcher::B_PARAM + index, 3, MAX_BPTS, 0));
+      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(55.140, 13.81+(i*95)), module, Stitcher::G_PARAM + index, 0.7, 1.3, 0.0));
+      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(55.140, 59.82+(i*95)), module, Stitcher::B_PARAM + index, 3, MAX_BPTS, 0));
     
       // light to signal if oscillator on / off 
 		  addChild(ModuleLightWidget::create<MediumLight<RedLight>>(Vec(139.185, 80+(i*95)), module, Stitcher::ONOFF_LIGHT + index));
