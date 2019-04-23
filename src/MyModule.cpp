@@ -98,7 +98,7 @@ void MyModule::step() {
   go.max_amp_step = rescale(params[ASTP_PARAM].value, 0.0, 1.0, 0.05, 0.3);
   go.max_dur_step = rescale(params[DSTP_PARAM].value, 0.0, 1.0, 0.01, 0.3);
   go.freq_mul = rescale(params[FREQ_PARAM].value, -1.0, 1.0, 0.05, 4.0);
-  go.g_rate = params[GRAT_PARAM].value * 5.f;
+  go.g_rate = rescale(params[GRAT_PARAM].value, 0.f, 1.f, 0.5f, 8.0f);
 
   go.process(deltaTime);
 
@@ -124,7 +124,7 @@ struct MyModuleWidget : ModuleWidget {
     addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(14, 177.16), module, MyModule::DSTP_PARAM, 0.0, 1.0, 0.9));
     addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(92, 177.16), module, MyModule::ASTP_PARAM, 0.0, 1.0, 0.9));
     
-    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(124.781, 275.91), module, MyModule::GRAT_PARAM, 0.7, 2.0, 0.0));
+    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(124.781, 275.91), module, MyModule::GRAT_PARAM, 0.f, 1.f, 0.0));
     addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(12, 275.83), module, MyModule::ENVS_PARAM, 1.0f, 4.0f, 4.0f));
 	
     // signal inputs

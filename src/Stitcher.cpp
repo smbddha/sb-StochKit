@@ -100,10 +100,10 @@ void Stitcher::step() {
   for (int i=0; i<NUM_OSCS; i++) {
     stutters[i] = (int) params[ST_PARAM + i].value;
     
-    gos[i].max_amp_step = rescale(params[S_PARAM + i].value, 0.0, 1.0, 0.05, 0.3) + g_max_amp_add;
+    gos[i].max_amp_step = rescale(params[S_PARAM + i].value, 0.0, 1.0, 0.05, 0.3) ;// + g_max_amp_add;
     gos[i].max_dur_step = g_max_dur_add;
 
-    gos[i].freq_mul = rescale(params[F_PARAM + i].value, -1.0, 1.0, 0.5, 4.0) * g_freq_mul;
+    gos[i].freq_mul = rescale(params[F_PARAM + i].value, -1.0, 1.0, 0.5, 4.0) ;//* g_freq_mul;
     gos[i].g_rate = params[G_PARAM + i].value * 5.f;
   
     int new_nbpts = clamp((int) params[B_PARAM + i].value, 3, MAX_BPTS);

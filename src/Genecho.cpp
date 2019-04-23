@@ -123,6 +123,8 @@ void GenEcho::step() {
   //float deltaTime = engineGetSampleTime();
   float amp_out = 0.0;
 
+  // TODO
+  // add sampling duration param / knob
 
   max_amp_step = params[ASTP_PARAM].value;
   max_dur_step = params[DSTP_PARAM].value;
