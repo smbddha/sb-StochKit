@@ -23,6 +23,7 @@ struct Stitcher : Module {
     G_DSTP_PARAM,
     G_BPTS_PARAM,
     G_GRAT_PARAM,
+    G_NOSC_PARAM,
     TRIG_PARAM,
     ENUMS(F_PARAM, NUM_OSCS),
     ENUMS(B_PARAM, NUM_OSCS),
@@ -88,7 +89,6 @@ struct Stitcher : Module {
 void Stitcher::step() {
   float deltaTime = engineGetSampleTime();
 
-  
   //if (phase >= 1.0) debug("PITCH PARAM: %f\n", (float) params[PITCH_PARAM].value);
 
   // read in global controls
@@ -96,14 +96,25 @@ void Stitcher::step() {
   g_max_amp_add = params[G_ASTP_PARAM].value;
   g_max_dur_add = params[G_DSTP_PARAM].value;
 
+  int prev = curr_num_oscs;
+  curr_num_oscs = (int) params[G_NOSC_PARAM].value;
+
+  if (prev != curr_num_oscs) debug("new # of oscs: %d\n", curr_num_oscs);
+
   // read in all the parameters for each oscillator
   for (int i=0; i<NUM_OSCS; i++) {
+    //if (i>=curr_num_oscs) debug("NO LIGHT FOR: %d\n", i);
+    //debug("%d: lval: %f\n", i, (i < curr_num_oscs) ? 1.0f : 0.0f);
+		
+    lights[ONOFF_LIGHT + i].value = (i < curr_num_oscs) ? 1.0f : 0.0f;
+
     stutters[i] = (int) params[ST_PARAM + i].value;
     
     gos[i].max_amp_step = rescale(params[S_PARAM + i].value, 0.0, 1.0, 0.05, 0.3) ;// + g_max_amp_add;
     gos[i].max_dur_step = g_max_dur_add;
 
-    gos[i].freq_mul = rescale(params[F_PARAM + i].value, -1.0, 1.0, 0.5, 4.0) ;//* g_freq_mul;
+
+    gos[i].freq_mul = rescale(params[F_PARAM + i].value, -1.0, 1.0, 0.05, 4.0) ;//* g_freq_mul;
     gos[i].g_rate = params[G_PARAM + i].value * 5.f;
   
     int new_nbpts = clamp((int) params[B_PARAM + i].value, 3, MAX_BPTS);
@@ -162,19 +173,18 @@ struct StitcherWidget : ModuleWidget {
 
 		//addParam(ParamWidget::create<CKD6>(Vec(40, 70), module, Stitcher::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
 
-    int index = 0;
     for (int i = 0; i < NUM_OSCS; i++) {
-      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.140, 13.81+(i*95)), module, Stitcher::F_PARAM + index, -1.0, 1.0, 0.0));
-      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.140, 59.82+(i*95)), module, Stitcher::S_PARAM + index, 0.0, 1.0, 0.9));
+      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.140, 13.81+(i*95)), module, Stitcher::F_PARAM + i, -1.0, 1.0, 0.0));
+      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.140, 59.82+(i*95)), module, Stitcher::S_PARAM + i, 0.0, 1.0, 0.9));
       
       // stutter param
-      addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(94.489, 24+(i*95)), module, Stitcher::ST_PARAM + index, 1.f, 5.f, 5.f));
+      addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(94.489, 24+(i*95)), module, Stitcher::ST_PARAM + i, 1.f, 5.f, 5.f));
 
-      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(55.140, 13.81+(i*95)), module, Stitcher::G_PARAM + index, 0.7, 1.3, 0.0));
-      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(55.140, 59.82+(i*95)), module, Stitcher::B_PARAM + index, 3, MAX_BPTS, 0));
+      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(55.140, 13.81+(i*95)), module, Stitcher::G_PARAM + i, 0.7, 1.3, 0.0));
+      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(55.140, 59.82+(i*95)), module, Stitcher::B_PARAM + i, 3, MAX_BPTS, 0));
     
       // light to signal if oscillator on / off 
-		  addChild(ModuleLightWidget::create<MediumLight<RedLight>>(Vec(139.185, 80+(i*95)), module, Stitcher::ONOFF_LIGHT + index));
+		  addChild(ModuleLightWidget::create<SmallLight<GreenLight>>(Vec(139.185, 80+(i*95)), module, Stitcher::ONOFF_LIGHT + i));
     }
 
     // global controls (on the right of the panel)
@@ -188,6 +198,7 @@ struct StitcherWidget : ModuleWidget {
     addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(218.489, 152.32), module, Stitcher::G_DSTP_PARAM, 0.5f, 1.5f, 0.f));
     addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(166.489, 225.86), module, Stitcher::G_BPTS_PARAM, 0.5f, 1.5f, 0.f));
     addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(218.489, 225.86), module, Stitcher::G_GRAT_PARAM, 0.5f, 1.5f, 0.f));
+    addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(218.489, 295.86), module, Stitcher::G_NOSC_PARAM, 1.f, 4.f, 4.f));
 
 		addOutput(Port::create<PJ301MPort>(Vec(227, 339), Port::OUTPUT, module, Stitcher::SINE_OUTPUT));
   }
