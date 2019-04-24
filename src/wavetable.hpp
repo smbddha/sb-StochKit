@@ -63,13 +63,16 @@ namespace rack {
           initSinWav();
       }
 
+      /*
       for (int i=0; i<TABLE_SIZE; i+=20) {
         debug("%d:  %f", i, table[i]);
       }
+      */
     }
 
     void switchEnvType(EnvType e) {
       debug("ENV TYPE: %d", e);
+      
       // don't switch if already that env
       if (et != e) {
         et = e;
@@ -78,6 +81,10 @@ namespace rack {
     }
 
     void initSinWav() {
+      // TODO
+      // would fm synthesis be handled here or with two seperate
+      // sine wavetables
+      
       // Fill the wavetable
       float phase = 0.f;
       for (int i=0; i<TABLE_SIZE; i++) {
@@ -89,8 +96,13 @@ namespace rack {
     void initTriEnv() {
       float phase = 0.f;
       for (int i=0; i<TABLE_SIZE; i++) {
-        if (phase < 0.5f) table[i] = ((2.f * i) / TABLE_SIZE);
-        else table[i] = ((-2.f * i) / TABLE_SIZE) + 2.f;
+        if (phase < 0.5f) {
+          table[i] = ((2.f * i) / TABLE_SIZE);
+        }
+        else  {
+          table[i] = ((-2.f * i) / TABLE_SIZE) + 2.f;
+        }
+        
         phase += 1.f / TABLE_SIZE;
       }
     }
@@ -122,7 +134,9 @@ namespace rack {
         if (i < p1) {
           table[i] = 0.5f * (1 + cosf(M_PI * (((2 * i) / (alpha * N)) - 1)));
         }
-        else if (i <= p2) table[i] = 1.f; 
+        else if (i <= p2) { 
+          table[i] = 1.f; 
+        } 
         else {
           table[i] = 0.5f * (1 + cosf(M_PI * (((2 * i) / (alpha * N)) - (2 / alpha) + 1)));
         }

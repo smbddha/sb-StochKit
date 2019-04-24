@@ -91,7 +91,11 @@ namespace rack {
       }
      
       if (GRAN_ON) {
-        //printf("SAMPLE: %f, off: %f\n", sample.get(off), off);
+       
+        // perform addition of grain to the generated amplitudes
+        // TODO
+        // maybe envs need a corresponding amplitude as well 
+        // could be controllable for some more audible effect
         g_amp = amp + (env.get(g_idx) * sample.get(off));
         g_amp_next = amp_next + (env.get(g_idx_next) * sample.get(off_next));
 
