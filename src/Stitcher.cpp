@@ -141,7 +141,7 @@ void Stitcher::step() {
       if (current_stutter < 1) {
         amp = amp_out;
         speed = gos[osc_idx].speed;
-        osc_idx = (osc_idx + 1) % NUM_OSCS;
+        osc_idx = (osc_idx + 1) % curr_num_oscs;
         
         //debug("-- new idx %d, bpts: %d, freq_mul: %d", osc_idx, gos[osc_idx].num_bpts, gos[osc_idx].freq_mul); 
 

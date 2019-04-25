@@ -27,6 +27,7 @@ struct GenEcho : Module {
     ASTP_PARAM,
     DSTP_PARAM,
     ENVS_PARAM,
+    SLEN_PARAM,
     NUM_PARAMS
 	};
 	enum InputIds {
@@ -157,7 +158,7 @@ void GenEcho::step() {
     for (unsigned int i=0; i<MAX_BPTS; i++) mAmps[i] = 0.f;
     for (unsigned int i=0; i<MAX_BPTS; i++) mDurs[i] = 1.f;
 
-    sample_size = MAX_SAMPLE_SIZE; 
+    sample_size = MAX_SAMPLE_SIZE * params[SLEN_PARAM].value; 
     num_bpts = sample_size / bpt_spc;
     sampling = true;
     idx = 0;
@@ -255,7 +256,8 @@ struct GenEchoWidget : ModuleWidget {
     addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(51.883, 178.20), module, GenEcho::DSTP_PARAM, 0.0, 0.1, 0.9));
     
     addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(9.883, 257.18), module, GenEcho::ENVS_PARAM, 1.f, 4.f, 4.f));
-    
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(51.883, 257.18), module, GenEcho::SLEN_PARAM, 0.1f, 1.0f, 0.f));
+
     //addParam(ParamWidget::create<CKD6>(Vec(110, 70), module, GenEcho::GATE_PARAM, 0.0f, 1.0f, 0.0f));
    
     addInput(Port::create<PJ301MPort>(Vec(9.210, 48.29), Port::INPUT, module, GenEcho::GATE_INPUT));
