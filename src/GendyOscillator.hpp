@@ -57,6 +57,24 @@ namespace rack {
 
     float amp_out = 0.f;
 
+    // for fm synthesis in grain
+    float f_mod = 400.f;
+    float f_car = 800.f;
+    
+    // need these to keep track of modulated carrier frequency for either
+    // grain in the synthesis
+    float f_car1 = f_car;
+    float f_car2 = f_car;
+
+    // fm modulation index
+    float i_mod = 100.f;
+
+    float phase_mod1 = 0.f;
+    float phase_mod2 = 0.f;
+    
+    float phase_car1 = 0.f;
+    float phase_car2 = 0.f;
+
     // only true when just reached last break point
     bool last_flag = false;
 
@@ -96,8 +114,9 @@ namespace rack {
         // TODO
         // maybe envs need a corresponding amplitude as well 
         // could be controllable for some more audible effect
-        g_amp = amp + (env.get(g_idx) * sample.get(off));
-        g_amp_next = amp_next + (env.get(g_idx_next) * sample.get(off_next));
+        
+        g_amp = amp + (env.get(g_idx) * sample.get(phase_car1));
+        g_amp_next = amp_next + (env.get(g_idx_next) * sample.get(phase_car2));
 
         // linear interpolation
         amp_out = ((1.0 - phase) * g_amp) + (phase * g_amp_next); 
@@ -113,10 +132,26 @@ namespace rack {
       // TODO
       //  -> could maybe just bundle with the envelope indices ??
       //  -> MAKE CONTROLLABLE 
-      off = fmod(off + (g_rate * 1e-1 * (1.f / 48000.f)), 1.f);
-      off_next = fmod(off_next + (g_rate * 1e-4 * (1.f / 48000.f)), 1.f);
+      off = fmod(off + (g_rate * 1e-1 * deltaTime), 1.f);
+      off_next = fmod(off_next + (g_rate * 1e-4 * deltaTime), 1.f);
       
       phase += speed;
+
+      // step phases and frequencies for fm in grans
+      phase_car1 += deltaTime * f_car1;
+      phase_car2 += deltaTime * f_car2;
+
+      phase_car1 = fmod(phase_car1, 1.f);
+      phase_car2 = fmod(phase_car2, 1.f);
+
+      phase_mod1 += deltaTime * f_mod;
+      phase_mod2 += deltaTime * f_mod;
+
+      phase_mod1 = fmod(phase_mod1, 1.f);
+      phase_mod2 = fmod(phase_mod2, 1.f);
+
+      f_car1 = f_car + (i_mod * sample.get(phase_mod1));
+      f_car2 = f_car + (i_mod * sample.get(phase_mod2));
     }
 
     float wrap(float in, float lb, float ub) {
