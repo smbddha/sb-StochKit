@@ -164,6 +164,7 @@ namespace rack {
      * Expects val 0.0 <= x < 1.0
      */
     float get(float x) {
+      if (x > 1.000000) debug("BAD!\n");
       return index(x * (float) TABLE_SIZE); 
     }
   };

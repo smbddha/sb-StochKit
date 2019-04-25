@@ -18,7 +18,11 @@ struct MyModule : Module {
     BPTS_PARAM,
     GRAT_PARAM,
     TRIG_PARAM,
+    FMTR_PARAM,
 		ENVS_PARAM,
+    FMOD_PARAM,
+    FCAR_PARAM,
+    IMOD_PARAM,
     NUM_PARAMS
 	};
 	enum InputIds {
@@ -43,6 +47,7 @@ struct MyModule : Module {
 	float blinkPhase = 0.0;
 
   SchmittTrigger smpTrigger;
+  
   GendyOscillator go;
 
   EnvType env = (EnvType) 1;
@@ -52,6 +57,8 @@ struct MyModule : Module {
   float dstp_sig = 1.f;
   float grat_sig = 1.f;
   float envs_sig = 1.f;
+
+  bool fm_is_on = false;
 
   // For more advanced Module features, read Rack's engine.hpp header file
 	// - toJson, fromJson: serialization of internal data
@@ -100,6 +107,12 @@ void MyModule::step() {
   go.freq_mul = rescale(params[FREQ_PARAM].value, -1.0, 1.0, 0.05, 4.0);
   go.g_rate = rescale(params[GRAT_PARAM].value, 0.f, 1.f, 0.5f, 8.0f);
 
+  // set fm params
+  go.is_fm_on = params[FMTR_PARAM].value > 0.0f;  
+  go.f_car = rescale(params[FCAR_PARAM].value, 0.f, 1.f, 5.f, 3000.f);
+  go.f_mod = rescale(params[FMOD_PARAM].value, 0.f, 1.f, 5.f, 3000.f);
+  go.i_mod = rescale(params[IMOD_PARAM].value, 0.f, 1.f, 10.f, 3000.f);
+
   go.process(deltaTime);
 
   outputs[SINE_OUTPUT].value = 5.0f * go.out();
@@ -126,7 +139,14 @@ struct MyModuleWidget : ModuleWidget {
     
     addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(124.781, 275.91), module, MyModule::GRAT_PARAM, 0.f, 1.f, 0.0));
     addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(12, 275.83), module, MyModule::ENVS_PARAM, 1.0f, 4.0f, 4.0f));
-	
+
+    // for fm 
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(100, 310), module, MyModule::FCAR_PARAM, 0.f, 1.f, 0.f));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(115, 310), module, MyModule::FMOD_PARAM, 0.f, 1.f, 0.f));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(130, 310), module, MyModule::IMOD_PARAM, 0.f, 1.f, 0.f));
+
+	  addParam(ParamWidget::create<CKSS>(Vec(80, 310), module, MyModule::FMTR_PARAM, 0.0f, 1.0f, 1.0f));
+    
     // signal inputs
     addInput(Port::create<PJ301MPort>(Vec(79.022, 133.72), Port::INPUT, module, MyModule::FREQ_INPUT));
     addInput(Port::create<PJ301MPort>(Vec(121.022, 133.72), Port::INPUT, module, MyModule::BPTS_INPUT));

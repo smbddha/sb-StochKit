@@ -21,7 +21,8 @@ namespace rack {
     float phase = 1.f;
     
     bool GRAN_ON = true;
-      
+    bool is_fm_on = true; 
+
     int num_bpts = 12;
     int min_freq = 30; 
     int max_freq = 1000;
@@ -52,8 +53,8 @@ namespace rack {
     float g_amp_next = 0.f;
     float g_rate = 1.f;
 
-    Wavetable sample;
-    Wavetable env = Wavetable(SIN); 
+    Wavetable sample = Wavetable(SIN);
+    Wavetable env = Wavetable(TRI); 
 
     float amp_out = 0.f;
 
@@ -77,6 +78,8 @@ namespace rack {
 
     // only true when just reached last break point
     bool last_flag = false;
+
+    int count = 0;
 
     void process(float deltaTime) {
       last_flag = false;
@@ -108,20 +111,25 @@ namespace rack {
         speed *= freq_mul;
       }
      
-      if (GRAN_ON) {
+      if (!is_fm_on) {
        
         // perform addition of grain to the generated amplitudes
         // TODO
         // maybe envs need a corresponding amplitude as well 
         // could be controllable for some more audible effect
         
-        g_amp = amp + (env.get(g_idx) * sample.get(phase_car1));
-        g_amp_next = amp_next + (env.get(g_idx_next) * sample.get(phase_car2));
+        g_amp = amp + (env.get(g_idx) * sample.get(off));
+        //g_amp = amp + (env.get(g_idx) * sample.get(phase_car1));
+        g_amp_next = amp_next + (env.get(g_idx_next) * sample.get(off_next));
+        //g_amp_next = amp_next + (env.get(g_idx_next) * sample.get(phase_car2));
 
         // linear interpolation
         amp_out = ((1.0 - phase) * g_amp) + (phase * g_amp_next); 
       } else {
-        amp_out = ((1.0 - phase) * amp) + (phase * amp_next); 
+        //amp_out = ((1.0 - phase) * amp) + (phase * amp_next); 
+        g_amp = amp + (env.get(g_idx) * sinf(phase_car1));
+        g_amp_next = amp_next + (env.get(g_idx_next) * sinf(phase_car2));
+        amp_out = ((1.0 - phase) * g_amp) + (phase * g_amp_next); 
       }
 
       // advance the grain envelope indices
@@ -133,7 +141,7 @@ namespace rack {
       //  -> could maybe just bundle with the envelope indices ??
       //  -> MAKE CONTROLLABLE 
       off = fmod(off + (g_rate * 1e-1 * deltaTime), 1.f);
-      off_next = fmod(off_next + (g_rate * 1e-4 * deltaTime), 1.f);
+      off_next = fmod(off_next + (g_rate * 1e-1 * deltaTime), 1.f);
       
       phase += speed;
 
@@ -150,8 +158,14 @@ namespace rack {
       phase_mod1 = fmod(phase_mod1, 1.f);
       phase_mod2 = fmod(phase_mod2, 1.f);
 
-      f_car1 = f_car + (i_mod * sample.get(phase_mod1));
-      f_car2 = f_car + (i_mod * sample.get(phase_mod2));
+      f_car1 = fmod(f_car + (i_mod * sample.get(phase_mod1)), 22050.f);
+      f_car2 = fmod(f_car + (i_mod * sample.get(phase_mod2)), 22050.f);
+    
+      if (count >30) {
+        //debug("f car: %f; f mod: %f, phase_car: %f, phase_mod: %f\n", f_car, f_mod, phase_car1, phase_mod1);
+        count = 30;
+      }
+      count++;
     }
 
     float wrap(float in, float lb, float ub) {
