@@ -17,6 +17,10 @@ struct MyModule : Module {
     DSTP_PARAM,
     BPTS_PARAM,
     GRAT_PARAM,
+    FREQCV_PARAM,
+    ASTPCV_PARAM,
+    DSTPCV_PARAM,
+    BPTSCV_PARAM,
     TRIG_PARAM,
     FMTR_PARAM,
 		ENVS_PARAM,
@@ -108,7 +112,7 @@ void MyModule::step() {
   go.g_rate = rescale(params[GRAT_PARAM].value, 0.f, 1.f, 0.5f, 8.0f);
 
   // set fm params
-  go.is_fm_on = params[FMTR_PARAM].value > 0.0f;  
+  go.is_fm_on = !(params[FMTR_PARAM].value > 0.0f);
   go.f_car = rescale(params[FCAR_PARAM].value, 0.f, 1.f, 5.f, 3000.f);
   go.f_mod = rescale(params[FMOD_PARAM].value, 0.f, 1.f, 5.f, 3000.f);
   go.i_mod = rescale(params[IMOD_PARAM].value, 0.f, 1.f, 10.f, 3000.f);
@@ -124,38 +128,45 @@ struct MyModuleWidget : ModuleWidget {
 		setPanel(SVG::load(assetPlugin(plugin, "res/MyModule3.svg")));
 
 		addChild(Widget::create<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-		addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 6 * RACK_GRID_WIDTH, 0)));
+		addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 1 * RACK_GRID_WIDTH, 0)));
 		addChild(Widget::create<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-		addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 6 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+		addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 1 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
     //addParam(ParamWidget::create<CKSSThree>(Vec(110, 240), module, MyModule::ENVS_PARAM, 0.0f, 2.0f, 0.0f));
 	
     // knob params
-    addParam(ParamWidget::create<RoundHugeBlackKnob>(Vec(15, 68), module, MyModule::FREQ_PARAM, -1.0, 1.0, 0.0));
-    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(113.328, 62.95), module, MyModule::BPTS_PARAM, 3, MAX_BPTS, 0));
+    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(22.757, 47.61), module, MyModule::FREQ_PARAM, -1.0, 1.0, 0.0));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(53.360, 97.90), module, MyModule::FREQCV_PARAM, 0.f, 1.f, 0.f));
     
-    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(14, 177.16), module, MyModule::DSTP_PARAM, 0.0, 1.0, 0.9));
-    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(92, 177.16), module, MyModule::ASTP_PARAM, 0.0, 1.0, 0.9));
+    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(110.757, 47.61), module, MyModule::BPTS_PARAM, 3, MAX_BPTS, 0));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(141.360, 97.90), module, MyModule::BPTSCV_PARAM, 3, MAX_BPTS, 0));
     
-    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(124.781, 275.91), module, MyModule::GRAT_PARAM, 0.f, 1.f, 0.0));
-    addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(12, 275.83), module, MyModule::ENVS_PARAM, 1.0f, 4.0f, 4.0f));
+    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(22.757, 141.61), module, MyModule::DSTP_PARAM, 0.0, 1.0, 0.9));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(53.360, 191.95), module, MyModule::DSTPCV_PARAM, 0.0, 1.0, 0.9));
+    
+    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(110.757, 141.61), module, MyModule::ASTP_PARAM, 0.0, 1.0, 0.9));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(141.360, 191.95), module, MyModule::ASTPCV_PARAM, 0.0, 1.0, 0.9));
+    
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(35.360, 241.85), module, MyModule::GRAT_PARAM, 0.f, 1.f, 0.0));
+    
+    addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(133.360, 241.85), module, MyModule::ENVS_PARAM, 1.0f, 4.0f, 4.0f));
 
     // for fm 
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(100, 310), module, MyModule::FCAR_PARAM, 0.f, 1.f, 0.f));
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(115, 310), module, MyModule::FMOD_PARAM, 0.f, 1.f, 0.f));
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(130, 310), module, MyModule::IMOD_PARAM, 0.f, 1.f, 0.f));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.360, 299.79), module, MyModule::FCAR_PARAM, 0.f, 1.f, 0.f));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(49.360, 299.79), module, MyModule::FMOD_PARAM, 0.f, 1.f, 0.f));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(29.260, 344.68), module, MyModule::IMOD_PARAM, 0.f, 1.f, 0.f));
 
-	  addParam(ParamWidget::create<CKSS>(Vec(80, 310), module, MyModule::FMTR_PARAM, 0.0f, 1.0f, 1.0f));
+	  addParam(ParamWidget::create<CKSS>(Vec(12.094, 264.98), module, MyModule::FMTR_PARAM, 0.0f, 1.0f, 0.0f));
     
     // signal inputs
-    addInput(Port::create<PJ301MPort>(Vec(79.022, 133.72), Port::INPUT, module, MyModule::FREQ_INPUT));
-    addInput(Port::create<PJ301MPort>(Vec(121.022, 133.72), Port::INPUT, module, MyModule::BPTS_INPUT));
+    addInput(Port::create<PJ301MPort>(Vec(15.73, 99.81), Port::INPUT, module, MyModule::FREQ_INPUT));
+    addInput(Port::create<PJ301MPort>(Vec(104.02, 99.81), Port::INPUT, module, MyModule::BPTS_INPUT));
     
-    addInput(Port::create<PJ301MPort>(Vec(59.187, 224.25), Port::INPUT, module, MyModule::ASTP_INPUT));
-		addInput(Port::create<PJ301MPort>(Vec(137.187, 224.25), Port::INPUT, module, MyModule::DSTP_INPUT));
+    addInput(Port::create<PJ301MPort>(Vec(15.73, 193.48), Port::INPUT, module, MyModule::ASTP_INPUT));
+		addInput(Port::create<PJ301MPort>(Vec(104.02, 193.48), Port::INPUT, module, MyModule::DSTP_INPUT));
     
-    addInput(Port::create<PJ301MPort>(Vec(19.875, 340.42), Port::INPUT, module, MyModule::ENVS_INPUT));
-		addInput(Port::create<PJ301MPort>(Vec(76.210, 285.33), Port::INPUT, module, MyModule::GRAT_INPUT));
+    addInput(Port::create<PJ301MPort>(Vec(100, 340.42), Port::INPUT, module, MyModule::ENVS_INPUT));
+		addInput(Port::create<PJ301MPort>(Vec(100, 285.33), Port::INPUT, module, MyModule::GRAT_INPUT));
 
     // output signal 
     addOutput(Port::create<PJ301MPort>(Vec(134.003, 334.86), Port::OUTPUT, module, MyModule::SINE_OUTPUT));
