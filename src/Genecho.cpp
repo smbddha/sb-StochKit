@@ -10,9 +10,6 @@
 #include "util/common.hpp"
 #include "dsp/digital.hpp"
 
-#define DR_WAV_IMPLEMENTATION
-#include "dr_wav.h"
-
 #include "Gendy.hpp"
 #include "wavetable.hpp"
 
@@ -71,14 +68,13 @@ struct GenEcho : Module {
   SchmittTrigger g2Trigger;
   SchmittTrigger resetTrigger;
 
-  float *sample = NULL;
-  float *_sample = NULL;
+  float sample[MAX_SAMPLE_SIZE] = {0.f};
+  float _sample[MAX_SAMPLE_SIZE] = {0.f};
 
   unsigned int channels;
   unsigned int sampleRate;
-  drwav_uint64 totalPCMFrameCount;
  
-  unsigned int sample_size = 1;
+  unsigned int sample_length = MAX_SAMPLE_SIZE;
 
   State state = LOADING;
   unsigned int idx = 0;
@@ -89,7 +85,7 @@ struct GenEcho : Module {
 
   // number of breakpoints - to be calculated according to size of
   // the sample
-  unsigned int num_bpts = 0;
+  unsigned int num_bpts = MAX_SAMPLE_SIZE / bpt_spc;
 
   float mAmps[MAX_BPTS] = {0.f};
   float mDurs[MAX_BPTS] = {1.f};
@@ -111,14 +107,11 @@ struct GenEcho : Module {
   bool sampling = false;
   unsigned int s_i = 0;
 
-  // For more advanced Module features, read Rack's engine.hpp header file
-	// - toJson, fromJson: serialization of internal data
-	// - onSampleRateChange: event triggered by a change of sample rate
-	// - onReset, onRandomize, onCreate, onDelete: implements special behavior when user clicks these from the context menu
+  float num_bpts_cv = 1.f;
+  float amp_step_cv = 1.f;
+  float dur_step_cv = 1.f;
 
-  GenEcho() : Module(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {
-    debug("MAX SAMPLE SIZE: %d", MAX_SAMPLE_SIZE);
-  }
+  GenEcho() : Module(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {}
 	
   void step() override;
   float wrap(float,float,float);
@@ -129,116 +122,108 @@ void GenEcho::step() {
   //float deltaTime = engineGetSampleTime();
   float amp_out = 0.0;
 
+  // read in cv vals for astp, dstp and bpts
   // TODO
-  // add sampling duration param / knob
+  // tweak the influence of the vals
+  num_bpts_cv = inputs[BPTS_INPUT].value * params[BPTSCV_PARAM].value;
+  amp_step_cv = inputs[ASTP_INPUT].value * params[ASTPCV_PARAM].value;
+  dur_step_cv = inputs[DSTP_INPUT].value * params[DSTPCV_PARAM].value;
+  
+  amp_step_cv = rescale(amp_step_cv, -5.f, 5.f, -0.05, 0.05);
 
-  max_amp_step = params[ASTP_PARAM].value;
+  sample_length = (int) (clamp(params[SLEN_PARAM].value, 0.1, 1.f) * MAX_SAMPLE_SIZE);
+
+  max_amp_step = params[ASTP_PARAM].value + amp_step_cv;
   max_dur_step = params[DSTP_PARAM].value;
 
   bpt_spc = (unsigned int) params[BPTS_PARAM].value + 800;
-  num_bpts = totalPCMFrameCount / bpt_spc;
-  
+  num_bpts = sample_length / bpt_spc + 1;
+ 
   env_dur = bpt_spc / 2;
 
   // snap knob for selecting envelope for the grain
-  int env_num = (int) clamp(roundf(params[ENVS_PARAM].value), 1.0f, 8.0f);
+  int env_num = (int) clamp(roundf(params[ENVS_PARAM].value), 1.0f, 4.0f);
 
   if (env.et != (EnvType) env_num) {
-    debug("Switching to env type: %d", env_num);
     env.switchEnvType((EnvType) env_num);
   }
 
   // handle sample reset
   if (smpTrigger.process(params[TRIG_PARAM].value)
       || resetTrigger.process(inputs[RSET_INPUT].value / 2.f)) {
-    for (unsigned int i=0; i<sample_size; i++) sample[i] = _sample[i];
-    for (unsigned int i=0; i<MAX_BPTS; i++) mAmps[i] = 0.f;
-    for (unsigned int i=0; i<MAX_BPTS; i++) mDurs[i] = 1.f;
+    for (unsigned int i=0; i<MAX_SAMPLE_SIZE; i++) sample[i] = _sample[i];
+    for (unsigned int i=0; i<MAX_BPTS; i++) {
+      mAmps[i] = 0.f;
+      mDurs[i] = 1.f; 
+    }
   }
 
   // handle sample trigger through gate 
   if (g2Trigger.process(inputs[GATE_INPUT].value / 2.f)) {
-    debug("TRIGGERED");
 
-    for (unsigned int i=0; i<MAX_BPTS; i++) mAmps[i] = 0.f;
-    for (unsigned int i=0; i<MAX_BPTS; i++) mDurs[i] = 1.f;
+    // reset accumulated breakpoint vals
+    for (unsigned int i=0; i<MAX_BPTS; i++) {
+      mAmps[i] = 0.f;
+      mDurs[i] = 1.f;
+    }
 
-    sample_size = MAX_SAMPLE_SIZE * params[SLEN_PARAM].value; 
-    num_bpts = sample_size / bpt_spc;
+    num_bpts = sample_length / bpt_spc;
     sampling = true;
     idx = 0;
     s_i = 0;
   }
 
-  if (state == LOADING) {
-    // reads in the sample file and stores in the sample float arry
-    // TODO
-    // implement simple file browser
-    sample = drwav_open_file_and_read_pcm_frames_f32("/Users/bdds/projects/vcv/Rack/plugins/SGDSS/src/sfwrite.wav", &channels, &sampleRate, &totalPCMFrameCount);
-    _sample = drwav_open_file_and_read_pcm_frames_f32("/Users/bdds/projects/vcv/Rack/plugins/SGDSS/src/sfwrite.wav", &channels, &sampleRate, &totalPCMFrameCount);
-
-    if (sample == NULL) {
-      debug("ERROR OPENING FILE\n");
-    }
-
-    debug("totalPCMFrameCount: %d ; MAX_BPTS: %d ; RATIO for 150: %d", totalPCMFrameCount, MAX_BPTS, totalPCMFrameCount / bpt_spc);
-    sample_size = (unsigned int) totalPCMFrameCount;
-    num_bpts = totalPCMFrameCount / bpt_spc;
-    state = GENERATING;
-  } else if (state==GENERATING) {
-    //debug("-- PHASE: %f ; G_IDX: %f ; G_IDX_NEXT: %f", phase, g_idx, g_idx_next);
-    
-    // can be sampling but still output, just at a 1 sample delay
-    // or will there even be a delay ??
-    // -> actually no delay noice
-    if (sampling) {
-      if (s_i >= sample_size - 50) {
-        float x,y,p;
-        x = sample[s_i-1];
-        y = sample[0];
-        p = 0.f;
-        while (s_i < sample_size) {
-          sample[s_i] = (x * (1-p)) + (y * p);
-          p += 1.f / 50.f;
-          s_i++;
-        }
-        debug("Finished sampling");
-        sampling = false;
-      } else {
-        sample[s_i] = inputs[WAV0_INPUT].value; 
-        _sample[s_i] = sample[s_i];
+  // can be sampling but still output, just at a 1 sample delay
+  // or will there even be a delay ??
+  // -> actually no delay noice
+  if (sampling) {
+    if (s_i >= MAX_SAMPLE_SIZE - 50) {
+      float x,y,p;
+      x = sample[s_i-1];
+      y = sample[0];
+      p = 0.f;
+      while (s_i < MAX_SAMPLE_SIZE) {
+        sample[s_i] = (x * (1-p)) + (y * p);
+        p += 1.f / 50.f;
         s_i++;
-      } 
-    }
-   
-    if (phase >= 1.0) {
-      phase -= 1.0;
-
-      amp = amp_next;
-      index = (index + 1) % num_bpts;
-
-      // adjust vals 
-      mAmps[index] = wrap(mAmps[index] + (max_amp_step * randomNormal()), -1.0f, 1.0f); 
-      amp_next = mAmps[index];
-
-      mDurs[index] = wrap(mDurs[index] + (max_dur_step * randomNormal()), 0.8, 1.2);
-
-      // step/adjust grain sample offsets 
-      g_idx = g_idx_next;
-      g_idx_next = 0.0;
-    }
-
-    // change amp in sample buffer
-    sample[idx] = wrap(sample[idx] + (amp * env.get(g_idx)), -5.f, 5.f);
-    amp_out = sample[idx];
-  
-    idx = (idx + 1) % sample_size;
-    g_idx = fmod(g_idx + (1.f / (4.f * env_dur)), 1.f);
-    g_idx_next = fmod(g_idx_next + (1.f / (4.f * env_dur)), 1.f);
-    
-    phase += 1.f / (mDurs[index] * bpt_spc);
+      }
+      debug("Finished sampling");
+      sampling = false;
+    } else {
+      sample[s_i] = inputs[WAV0_INPUT].value; 
+      _sample[s_i] = sample[s_i];
+      s_i++;
+    } 
   }
 
+  if (phase >= 1.0) {
+    phase -= 1.0;
+
+    amp = amp_next;
+    index = (index + 1) % num_bpts;
+    
+    // adjust vals 
+    mAmps[index] = wrap(mAmps[index] + (max_amp_step * randomNormal()), -1.0f, 1.0f); 
+    amp_next = mAmps[index];
+
+    mDurs[index] = wrap(mDurs[index] + (max_dur_step * randomNormal()), 0.8, 1.2);
+
+    // step/adjust grain sample offsets 
+    g_idx = g_idx_next;
+    g_idx_next = 0.0;
+  }
+
+  // change amp in sample buffer
+  sample[idx] = wrap(sample[idx] + (amp * env.get(g_idx)), -5.f, 5.f);
+  amp_out = sample[idx];
+
+  idx = (idx + 1) % sample_length;
+  g_idx = fmod(g_idx + (1.f / (4.f * env_dur)), 1.f);
+  g_idx_next = fmod(g_idx_next + (1.f / (4.f * env_dur)), 1.f);
+  
+  phase += 1.f / (mDurs[index] * bpt_spc);
+
+  // get that amp OUT
   outputs[SINE_OUTPUT].value = amp_out;
 }
 
@@ -255,16 +240,16 @@ struct GenEchoWidget : ModuleWidget {
    
     //addParam(ParamWidget::create<CKD6>(Vec(51.210, 80.46), module, GenEcho::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
    
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.883, 40.49), module, GenEcho::SLEN_PARAM, 0.f, 1.f, 0.f));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.883, 40.49), module, GenEcho::SLEN_PARAM, 0.01f, 1.f, 0.f));
 
     addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.883, 139.97), module, GenEcho::BPTS_PARAM, 0, 2200, 0.0));
     addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(55.883, 139.97), module, GenEcho::BPTSCV_PARAM, 0, 2200, 0.0));
     
     addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.883, 208.54), module, GenEcho::ASTP_PARAM, 0.0, 0.6, 0.9));
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(55.883, 208.54), module, GenEcho::ASTPCV_PARAM, 0.0, 0.6, 0.9));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(55.883, 208.54), module, GenEcho::ASTPCV_PARAM, 0.f, 1.f, 0.f));
     
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.883, 277.11), module, GenEcho::DSTP_PARAM, 0.0, 0.1, 0.9));
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(55.883, 277.11), module, GenEcho::DSTPCV_PARAM, 0.0, 0.1, 0.9));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.883, 277.11), module, GenEcho::DSTP_PARAM, 0.0, 0.2, 0.9));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(55.883, 277.11), module, GenEcho::DSTPCV_PARAM, 0.f, 1.f, 0.f));
     
     addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(7.883, 344.25), module, GenEcho::ENVS_PARAM, 1.f, 4.f, 4.f));
 

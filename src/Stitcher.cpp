@@ -28,6 +28,7 @@ struct Stitcher : Module {
     ENUMS(F_PARAM, NUM_OSCS),
     ENUMS(B_PARAM, NUM_OSCS),
     ENUMS(S_PARAM, NUM_OSCS),
+    ENUMS(D_PARAM, NUM_OSCS),
     ENUMS(G_PARAM, NUM_OSCS),
     ENUMS(ST_PARAM, NUM_OSCS),
     NUM_PARAMS
@@ -37,8 +38,8 @@ struct Stitcher : Module {
 		ENUMS(F_INPUT, NUM_OSCS),
     ENUMS(B_INPUT, NUM_OSCS),
     ENUMS(S_INPUT, NUM_OSCS),
+    ENUMS(D_INPUT, NUM_OSCS),
     ENUMS(G_INPUT, NUM_OSCS),
-    ENUMS(ST_INPUT, NUM_OSCS),
     NUM_INPUTS
 	};
 	enum OutputIds {
@@ -51,7 +52,6 @@ struct Stitcher : Module {
 		NUM_LIGHTS
 	};
 
-	//float phase = 1.0;
 	float blinkPhase = 0.0;
 
   SchmittTrigger smpTrigger;
@@ -97,7 +97,7 @@ void Stitcher::step() {
   g_max_dur_add = params[G_DSTP_PARAM].value;
 
   int prev = curr_num_oscs;
-  curr_num_oscs = (int) params[G_NOSC_PARAM].value;
+  curr_num_oscs = (int) clamp(params[G_NOSC_PARAM].value, 1.f, 4.f);
 
   if (prev != curr_num_oscs) debug("new # of oscs: %d\n", curr_num_oscs);
 
@@ -122,9 +122,6 @@ void Stitcher::step() {
     //debug("I: %d", i);
   }
 
-  if (smpTrigger.process(params[TRIG_PARAM].value)) {
-  }
- 
   if (is_swapping) {
     amp_out = ((1.0 - phase) * amp) + (phase * amp_next); 
 
@@ -174,15 +171,26 @@ struct StitcherWidget : ModuleWidget {
 		//addParam(ParamWidget::create<CKD6>(Vec(40, 70), module, Stitcher::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
 
     for (int i = 0; i < NUM_OSCS; i++) {
-      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.140, 13.81+(i*95)), module, Stitcher::F_PARAM + i, -1.0, 1.0, 0.0));
-      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.140, 59.82+(i*95)), module, Stitcher::S_PARAM + i, 0.0, 1.0, 0.9));
+      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(11.140, 7.8+(i*95)), module, Stitcher::F_PARAM + i, -1.0, 1.0, 0.0));
+      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(11.140, 45.8+(i*95)), module, Stitcher::S_PARAM + i, 0.0, 1.0, 0.9));
+      
+      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(59.140, 7.8+(i*95)), module, Stitcher::B_PARAM + i, 3, MAX_BPTS, 0));
+      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(59.140, 45.8+(i*95)), module, Stitcher::D_PARAM + i, 0.f, 1.f, 0.9f));
+    
+      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(105.140, 7.8+(i*95)), module, Stitcher::G_PARAM + i, 0.7, 1.3, 0.0));
       
       // stutter param
-      addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(94.489, 24+(i*95)), module, Stitcher::ST_PARAM + i, 1.f, 5.f, 5.f));
+      addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(109.140, 53.8+(i*95)), module, Stitcher::ST_PARAM + i, 1.f, 5.f, 5.f));
 
-      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(55.140, 13.81+(i*95)), module, Stitcher::G_PARAM + i, 0.7, 1.3, 0.0));
-      addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(55.140, 59.82+(i*95)), module, Stitcher::B_PARAM + i, 3, MAX_BPTS, 0));
-    
+      // CV inputs
+      addInput(Port::create<PJ301MPort>(Vec(33.218, 26+(i*95)), Port::INPUT, module, Stitcher::F_INPUT + i));
+      addInput(Port::create<PJ301MPort>(Vec(33.218, 64.5+(i*95)), Port::INPUT, module, Stitcher::S_INPUT + i));
+      
+      addInput(Port::create<PJ301MPort>(Vec(81.218, 26+(i*95)), Port::INPUT, module, Stitcher::B_INPUT + i));
+      addInput(Port::create<PJ301MPort>(Vec(81.218, 64.5+(i*95)), Port::INPUT, module, Stitcher::D_INPUT + i));
+      
+      addInput(Port::create<PJ301MPort>(Vec(127.218, 26+(i*95)), Port::INPUT, module, Stitcher::G_INPUT + i));
+
       // light to signal if oscillator on / off 
 		  addChild(ModuleLightWidget::create<SmallLight<GreenLight>>(Vec(139.185, 80+(i*95)), module, Stitcher::ONOFF_LIGHT + i));
     }
@@ -204,9 +212,4 @@ struct StitcherWidget : ModuleWidget {
   }
 };
 
-
-// Specify the Module and ModuleWidget subclass, human-readable
-// author name for categorization per plugin, module slug (should never
-// change), human-readable module name, and any number of tags
-// (found in `include/tags.hpp`) separated by commas.
 Model *modelStitcher = Model::create<Stitcher, StitcherWidget>("Gendy", "Stitcher", "Stitcher Module", OSCILLATOR_TAG);
