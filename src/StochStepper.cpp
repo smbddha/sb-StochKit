@@ -3,39 +3,6 @@
 #include "util/common.hpp"
 #include "dsp/digital.hpp"
 
-enum DistributionEqs {
-  UNIFORM,
-  EXPONENTIAL,
-  POISSON,
-  GAUSSIAN,
-  NUM_EQS
-};
-
-/*
- * gRand
- * generates a random number based on a 
- * given probabilty distribution
- *
- * @param DistributionEqs type - enum for a specific prop. distribution
- */
-float gRand(DistributionEqs type) {
-  float n = randomNormal(); 
-  switch (type) {
-    case UNIFORM:
-      break;
-    case EXPONENTIAL:
-      break;
-    case POISSON:
-      break;
-    case GAUSSIAN:
-      break;
-    default:
-      break;
-  }
-
-  return n;
-}
-
 struct StochStepper : Module {
 	enum ParamIds {
     STEP_PARAM,
@@ -123,9 +90,4 @@ struct StochStepperWidget : ModuleWidget {
 	}
 };
 
-
-// Specify the Module and ModuleWidget subclass, human-readable
-// author name for categorization per plugin, module slug (should never
-// change), human-readable module name, and any number of tags
-// (found in `include/tags.hpp`) separated by commas.
 Model *modelStochStepper = Model::create<StochStepper, StochStepperWidget>("Gendy", "StochStepper", "Stochastic Stepper", OSCILLATOR_TAG);

@@ -7,10 +7,11 @@
  * module
  */
 
+#include "Gendy.hpp"
+
 #include "util/common.hpp"
 #include "dsp/digital.hpp"
 
-#include "Gendy.hpp"
 #include "wavetable.hpp"
 
 #define MAX_BPTS 4096 

@@ -24,33 +24,32 @@ namespace rack {
   enum DistType {
     LINEAR,
     CAUCHY,
-    EXPON
+    ARCSINE
   };
 
   struct gRandGen {
     float my_rand(DistType t, float rand) {
-      float c, temp;
+      float c, temp, out;
 
       float a = 0.5f;
-      float out = rand;
+      
       switch (t) {
         case LINEAR:
-          break;
+          return rand; 
         case CAUCHY:
           c = atan(10 * a);
           temp = (1.f/a) * tan(c * (2.f * rand - 1.f));
           out = temp*0.1f;
-          break;
-        case EXPON:
-          c = log(1.f - (0.999f * a));
-          temp = log(1.f - (rand * 0.999f * rand)) / c;
-          out = 2.f * temp - 1.f;
-          break;
+          return out;
+        case ARCSINE:
+          c = sinf(1.5707963f * a); 
+		      out = sinf(M_PI * (rand - 0.5f) * a) / c;
+          return out;
         default:
           break;
       }
 
-      return out;
+      return rand;
     }
   };
    

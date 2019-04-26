@@ -56,6 +56,9 @@ namespace rack {
     Wavetable sample = Wavetable(SIN);
     Wavetable env = Wavetable(TRI); 
 
+    DistType dt = LINEAR;
+    gRandGen rg;
+    
     float amp_out = 0.f;
 
     // for fm synthesis in grain
@@ -94,8 +97,8 @@ namespace rack {
         last_flag = index == num_bpts - 1;
 
         /* adjust vals */
-        amps[index] = wrap(amps[index] + (max_amp_step * randomNormal()), -1.0f, 1.0f); 
-        durs[index] = wrap(durs[index] + (max_dur_step * randomNormal()), 0.5f, 1.5f);
+        amps[index] = wrap(amps[index] + (max_amp_step * rg.my_rand(dt, randomNormal())), -1.0f, 1.0f); 
+        durs[index] = wrap(durs[index] + (max_dur_step * rg.my_rand(dt, randomNormal())), 0.5f, 1.5f);
      
         amp_next = amps[index];
         rate = durs[index];
