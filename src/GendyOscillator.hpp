@@ -22,6 +22,7 @@ namespace rack {
     
     bool GRAN_ON = true;
     bool is_fm_on = true; 
+    bool is_mirroring = false;
 
     int num_bpts = 12;
     int min_freq = 30; 
@@ -97,9 +98,15 @@ namespace rack {
         last_flag = index == num_bpts - 1;
 
         /* adjust vals */
-        amps[index] = wrap(amps[index] + (max_amp_step * rg.my_rand(dt, randomNormal())), -1.0f, 1.0f); 
-        durs[index] = wrap(durs[index] + (max_dur_step * rg.my_rand(dt, randomNormal())), 0.5f, 1.5f);
-     
+        if (is_mirroring) {
+          amps[index] = mirror(amps[index] + (max_amp_step * rg.my_rand(dt, randomNormal())), -1.0f, 1.0f); 
+          durs[index] = mirror(durs[index] + (max_dur_step * rg.my_rand(dt, randomNormal())), 0.5f, 1.5f);
+        }
+        else {
+          amps[index] = wrap(amps[index] + (max_amp_step * rg.my_rand(dt, randomNormal())), -1.0f, 1.0f); 
+          durs[index] = wrap(durs[index] + (max_dur_step * rg.my_rand(dt, randomNormal())), 0.5f, 1.5f);
+        }
+        
         amp_next = amps[index];
         rate = durs[index];
 
@@ -173,8 +180,21 @@ namespace rack {
 
     float wrap(float in, float lb, float ub) {
       float out = in;
-      if (in > ub) out = ub;
-      else if (in < lb) out = lb;
+      if (in > ub) out = lb;
+      else if (in < lb) out = ub;
+      return out;
+    }
+
+    float mirror(float in, float lb, float ub) {
+      float out = in;
+
+      if (in > ub) {
+        out = out - (in - ub);
+      }
+      else if (in < lb) {
+        out = out - (in - lb);
+      }
+      
       return out;
     }
     

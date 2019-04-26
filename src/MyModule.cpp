@@ -32,6 +32,7 @@ struct MyModule : Module {
     FMODCV_PARAM,
     IMODCV_PARAM,
     PDST_PARAM,
+    MIRR_PARAM,
     NUM_PARAMS
 	};
 	enum InputIds {
@@ -106,10 +107,10 @@ void MyModule::step() {
   // TODO
   // accept modulation of signal inputs for each parameter
   freq_sig = inputs[FREQ_INPUT].value;
-  bpts_sig = 5.f * quadraticBipolar(inputs[BPTS_INPUT].value * params[BPTSCV_PARAM].value);
-  astp_sig = quadraticBipolar(inputs[ASTP_INPUT].value * params[ASTPCV_PARAM].value);
-  dstp_sig = quadraticBipolar(inputs[DSTP_INPUT].value * params[DSTPCV_PARAM].value);
-  grat_sig = quadraticBipolar(inputs[GRAT_INPUT].value * params[GRATCV_PARAM].value);
+  bpts_sig = 5.f * quadraticBipolar((inputs[BPTS_INPUT].value / 5.f) * params[BPTSCV_PARAM].value);
+  astp_sig = quadraticBipolar((inputs[ASTP_INPUT].value / 5.f) * params[ASTPCV_PARAM].value);
+  dstp_sig = quadraticBipolar((inputs[DSTP_INPUT].value / 5.f) * params[DSTPCV_PARAM].value);
+  grat_sig = quadraticBipolar((inputs[GRAT_INPUT].value / 5.f) * params[GRATCV_PARAM].value);
  
   // fm control sigs
   fmod_sig = quadraticBipolar(inputs[FMOD_INPUT].value * params[FMODCV_PARAM].value);
@@ -162,6 +163,7 @@ struct MyModuleWidget : ModuleWidget {
     addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(105.360, 191.95), module, MyModule::ASTPCV_PARAM, 0.f, 1.f, 0.f));
     
     addParam(ParamWidget::create<CKSSThree>(Vec(142.147, 143.22), module, MyModule::PDST_PARAM, 0.f, 2.f, 0.f)); 
+    addParam(ParamWidget::create<CKSS>(Vec(143.379, 202.07), module, MyModule::MIRR_PARAM, 0.f, 1.f, 0.f)); 
 
     addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(31.360, 240.45), module, MyModule::GRAT_PARAM, 0.f, 1.f, 0.f));
     addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(67.360, 240.45), module, MyModule::GRATCV_PARAM, 0.f, 1.f, 0.f));
@@ -169,13 +171,13 @@ struct MyModuleWidget : ModuleWidget {
     addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(143.360, 262.68), module, MyModule::ENVS_PARAM, 1.0f, 4.0f, 4.0f));
 
     // for fm 
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.360, 299.79), module, MyModule::FCAR_PARAM, 0.f, 1.f, 0.f));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(23.360, 302.25), module, MyModule::FCAR_PARAM, 0.f, 1.f, 0.f));
     
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(49.360, 299.79), module, MyModule::FMOD_PARAM, 0.f, 1.f, 0.f));
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(83.360, 299.79), module, MyModule::FMODCV_PARAM, 0.f, 1.f, 0.f));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(63.360, 302.25), module, MyModule::FMOD_PARAM, 0.f, 1.f, 0.f));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(97.360, 302.25), module, MyModule::FMODCV_PARAM, 0.f, 1.f, 0.f));
 
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.360, 345.62), module, MyModule::IMOD_PARAM, 0.f, 1.f, 0.f));
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(45.359, 345.62), module, MyModule::IMODCV_PARAM, 0.f, 1.f, 0.f));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(13.360, 348.84), module, MyModule::IMOD_PARAM, 0.f, 1.f, 0.f));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(47.360, 348.84), module, MyModule::IMODCV_PARAM, 0.f, 1.f, 0.f));
 
 	  addParam(ParamWidget::create<CKSS>(Vec(12.094, 264.98), module, MyModule::FMTR_PARAM, 0.0f, 1.0f, 0.0f));
     
