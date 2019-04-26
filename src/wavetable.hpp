@@ -16,6 +16,45 @@
 
 namespace rack {
 
+  /*
+   * The probability distribution inverse transform functions are thanks
+   * to Nick Collins Gendy UGen implementations for SuperCollider licensed
+   * under the GNU General Public License
+   */
+  enum DistType {
+    LINEAR,
+    CAUCHY,
+    EXPON
+  };
+
+  struct gRandGen {
+    float my_rand(DistType t, float rand) {
+      float c, temp;
+
+      float a = 0.5f;
+      float out = rand;
+      switch (t) {
+        case LINEAR:
+          break;
+        case CAUCHY:
+          c = atan(10 * a);
+          temp = (1.f/a) * tan(c * (2.f * rand - 1.f));
+          out = temp*0.1f;
+          break;
+        case EXPON:
+          c = log(1.f - (0.999f * a));
+          temp = log(1.f - (rand * 0.999f * rand)) / c;
+          out = 2.f * temp - 1.f;
+          break;
+        default:
+          break;
+      }
+
+      return out;
+    }
+  };
+   
+
   enum EnvType {
     SIN,
     TRI,
@@ -62,16 +101,9 @@ namespace rack {
         default:
           initSinWav();
       }
-
-      /*
-      for (int i=0; i<TABLE_SIZE; i+=20) {
-        debug("%d:  %f", i, table[i]);
-      }
-      */
     }
 
     void switchEnvType(EnvType e) {
-      debug("ENV TYPE: %d", e);
       
       // don't switch if already that env
       if (et != e) {
