@@ -21,20 +21,25 @@
 
 struct GenEcho : Module {
 	enum ParamIds {
-    BSPC_PARAM,
+    BPTS_PARAM,
 		TRIG_PARAM,
     GATE_PARAM, 
     ASTP_PARAM,
     DSTP_PARAM,
     ENVS_PARAM,
     SLEN_PARAM,
+    BPTSCV_PARAM,
+    ASTPCV_PARAM,
+    DSTPCV_PARAM,
     NUM_PARAMS
 	};
 	enum InputIds {
 		WAV0_INPUT,
 		GATE_INPUT,
     RSET_INPUT,
-    BSPC_INPUT,
+    BPTS_INPUT,
+    ASTP_INPUT,
+    DSTP_INPUT,
     NUM_INPUTS
 	};
 	enum OutputIds {
@@ -130,7 +135,7 @@ void GenEcho::step() {
   max_amp_step = params[ASTP_PARAM].value;
   max_dur_step = params[DSTP_PARAM].value;
 
-  bpt_spc = (unsigned int) params[BSPC_PARAM].value + 800;
+  bpt_spc = (unsigned int) params[BPTS_PARAM].value + 800;
   num_bpts = totalPCMFrameCount / bpt_spc;
   
   env_dur = bpt_spc / 2;
@@ -248,24 +253,33 @@ struct GenEchoWidget : ModuleWidget {
 	GenEchoWidget(GenEcho *module) : ModuleWidget(module) {
 		setPanel(SVG::load(assetPlugin(plugin, "res/GenEcho.svg")));
    
-    addParam(ParamWidget::create<CKD6>(Vec(51.210, 80.46), module, GenEcho::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
+    //addParam(ParamWidget::create<CKD6>(Vec(51.210, 80.46), module, GenEcho::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
+   
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.883, 40.49), module, GenEcho::SLEN_PARAM, 0.f, 1.f, 0.f));
+
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.883, 139.97), module, GenEcho::BPTS_PARAM, 0, 2200, 0.0));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(55.883, 139.97), module, GenEcho::BPTSCV_PARAM, 0, 2200, 0.0));
     
-    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(5, 104), module, GenEcho::BSPC_PARAM, 0, 2200, 0.0));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.883, 208.54), module, GenEcho::ASTP_PARAM, 0.0, 0.6, 0.9));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(55.883, 208.54), module, GenEcho::ASTPCV_PARAM, 0.0, 0.6, 0.9));
     
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.883, 178.20), module, GenEcho::ASTP_PARAM, 0.0, 0.6, 0.9));
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(51.883, 178.20), module, GenEcho::DSTP_PARAM, 0.0, 0.1, 0.9));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.883, 277.11), module, GenEcho::DSTP_PARAM, 0.0, 0.1, 0.9));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(55.883, 277.11), module, GenEcho::DSTPCV_PARAM, 0.0, 0.1, 0.9));
     
-    addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(9.883, 257.18), module, GenEcho::ENVS_PARAM, 1.f, 4.f, 4.f));
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(51.883, 257.18), module, GenEcho::SLEN_PARAM, 0.1f, 1.0f, 0.f));
+    addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(7.883, 344.25), module, GenEcho::ENVS_PARAM, 1.f, 4.f, 4.f));
 
     //addParam(ParamWidget::create<CKD6>(Vec(110, 70), module, GenEcho::GATE_PARAM, 0.0f, 1.0f, 0.0f));
-   
-    addInput(Port::create<PJ301MPort>(Vec(9.210, 48.29), Port::INPUT, module, GenEcho::GATE_INPUT));
-    addInput(Port::create<PJ301MPort>(Vec(51.210, 48.29), Port::INPUT, module, GenEcho::RSET_INPUT));
-    addInput(Port::create<PJ301MPort>(Vec(51.210, 129.31), Port::INPUT, module, GenEcho::BSPC_INPUT));
-    addInput(Port::create<PJ301MPort>(Vec(30.567, 297.56), Port::INPUT, module, GenEcho::WAV0_INPUT));
 
-    addOutput(Port::create<PJ301MPort>(Vec(32.17, 338.97), Port::OUTPUT, module, GenEcho::SINE_OUTPUT));
+    addInput(Port::create<PJ301MPort>(Vec(10.281, 69.79), Port::INPUT, module, GenEcho::WAV0_INPUT));
+    addInput(Port::create<PJ301MPort>(Vec(10.281, 95.54), Port::INPUT, module, GenEcho::GATE_INPUT));
+    
+    addInput(Port::create<PJ301MPort>(Vec(56.281, 95.54), Port::INPUT, module, GenEcho::RSET_INPUT));
+    
+    addInput(Port::create<PJ301MPort>(Vec(10.281, 169.01), Port::INPUT, module, GenEcho::BPTS_INPUT));
+    addInput(Port::create<PJ301MPort>(Vec(10.281, 236.72), Port::INPUT, module, GenEcho::ASTP_INPUT));
+    addInput(Port::create<PJ301MPort>(Vec(10.281, 306.00), Port::INPUT, module, GenEcho::DSTP_INPUT));
+
+    addOutput(Port::create<PJ301MPort>(Vec(55.54, 345.97), Port::OUTPUT, module, GenEcho::SINE_OUTPUT));
   }
 };
 
