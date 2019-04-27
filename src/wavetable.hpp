@@ -16,6 +16,9 @@
 
 namespace rack {
 
+  float wrap(float in, float lb, float ub);
+  float mirror(float in, float lb, float ub);
+
   /*
    * The probability distribution inverse transform functions are thanks
    * to Nick Collins Gendy UGen implementations for SuperCollider licensed

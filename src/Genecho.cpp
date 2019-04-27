@@ -11,6 +11,7 @@
 
 #include "util/common.hpp"
 #include "dsp/digital.hpp"
+#include "dsp/resampler.hpp"
 
 #include "wavetable.hpp"
 
@@ -29,6 +30,9 @@ struct GenEcho : Module {
     BPTSCV_PARAM,
     ASTPCV_PARAM,
     DSTPCV_PARAM,
+    MIRR_PARAM,
+    PDST_PARAM,
+    ACCM_PARAM,
     NUM_PARAMS
 	};
 	enum InputIds {
@@ -52,18 +56,6 @@ struct GenEcho : Module {
 	float phase = 1.0;
 	float blinkPhase = 0.0;
 
-  enum State {
-    LOADING,
-    GENERATING,
-    NUM_STATES
-  };
-
-  enum InterpolationTypes {
-    LINEAR,
-    COSINE,
-    GRANULAR
-  };
-
   SchmittTrigger smpTrigger;
   SchmittTrigger gTrigger;
   SchmittTrigger g2Trigger;
@@ -77,7 +69,6 @@ struct GenEcho : Module {
  
   unsigned int sample_length = MAX_SAMPLE_SIZE;
 
-  State state = LOADING;
   unsigned int idx = 0;
 
   // spacing between breakpoints... in samples rn
@@ -108,14 +99,22 @@ struct GenEcho : Module {
   bool sampling = false;
   unsigned int s_i = 0;
 
-  float num_bpts_cv = 1.f;
-  float amp_step_cv = 1.f;
-  float dur_step_cv = 1.f;
+  float bpts_sig = 1.f;
+  float astp_sig = 1.f;
+  float dstp_sig = 1.f;
+
+  float astp = 1.f;
+  float dstp = 1.f;
+
+  bool is_mirroring = false;
+  bool is_accumulating = false;
+  
+  gRandGen rg;
+  DistType dt = LINEAR; 
 
   GenEcho() : Module(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {}
 	
   void step() override;
-  float wrap(float,float,float);
 };
 
 void GenEcho::step() {
@@ -123,21 +122,24 @@ void GenEcho::step() {
   //float deltaTime = engineGetSampleTime();
   float amp_out = 0.0;
 
+  // handle the 3 switches for accumlating and mirror toggle
+  // and probability distrobution selection
+  is_accumulating = (int) params[ACCM_PARAM].value;
+  is_mirroring = (int) params[MIRR_PARAM].value;
+  dt = (DistType) params[PDST_PARAM].value;
+
   // read in cv vals for astp, dstp and bpts
-  // TODO
-  // tweak the influence of the vals
-  num_bpts_cv = inputs[BPTS_INPUT].value * params[BPTSCV_PARAM].value;
-  amp_step_cv = inputs[ASTP_INPUT].value * params[ASTPCV_PARAM].value;
-  dur_step_cv = inputs[DSTP_INPUT].value * params[DSTPCV_PARAM].value;
-  
-  amp_step_cv = rescale(amp_step_cv, -5.f, 5.f, -0.05, 0.05);
+  bpts_sig = 5.f * quadraticBipolar((inputs[BPTS_INPUT].value / 5.f) * params[BPTSCV_PARAM].value);
+  astp_sig = quadraticBipolar((inputs[ASTP_INPUT].value / 5.f) * params[ASTPCV_PARAM].value);
+  dstp_sig = quadraticBipolar((inputs[DSTP_INPUT].value / 5.f) * params[DSTPCV_PARAM].value);
+
+  max_amp_step = rescale(params[ASTP_PARAM].value + (astp_sig / 4.f), 0.0, 1.0, 0.05, 0.3);
+  max_dur_step = rescale(params[DSTP_PARAM].value + (dstp_sig / 4.f), 0.0, 1.0, 0.01, 0.3);
 
   sample_length = (int) (clamp(params[SLEN_PARAM].value, 0.1, 1.f) * MAX_SAMPLE_SIZE);
 
-  max_amp_step = params[ASTP_PARAM].value + amp_step_cv;
-  max_dur_step = params[DSTP_PARAM].value;
-
   bpt_spc = (unsigned int) params[BPTS_PARAM].value + 800;
+  bpt_spc += (unsigned int) rescale(bpts_sig, -1.f, 1.f, 1.f, 200.f);
   num_bpts = sample_length / bpt_spc + 1;
  
   env_dur = bpt_spc / 2;
@@ -174,9 +176,6 @@ void GenEcho::step() {
     s_i = 0;
   }
 
-  // can be sampling but still output, just at a 1 sample delay
-  // or will there even be a delay ??
-  // -> actually no delay noice
   if (sampling) {
     if (s_i >= MAX_SAMPLE_SIZE - 50) {
       float x,y,p;
@@ -203,12 +202,21 @@ void GenEcho::step() {
     amp = amp_next;
     index = (index + 1) % num_bpts;
     
-    // adjust vals 
-    mAmps[index] = wrap(mAmps[index] + (max_amp_step * randomNormal()), -1.0f, 1.0f); 
+    // adjust vals
+    astp = max_amp_step * rg.my_rand(dt, randomNormal());
+    dstp = max_dur_step * rg.my_rand(dt, randomNormal());
+
+    if (is_mirroring) {
+      mAmps[index] = mirror((is_accumulating ? mAmps[index] : 0.f) + astp, -1.0f, 1.0f); 
+      mDurs[index] = mirror(mDurs[index] + (dstp), 0.5, 1.5);
+    }
+    else {
+      mAmps[index] = wrap((is_accumulating ? mAmps[index] : 0.f) + astp, -1.0f, 1.0f); 
+      mDurs[index] = wrap(mDurs[index] + dstp, 0.5, 1.5);
+    }
+  
     amp_next = mAmps[index];
-
-    mDurs[index] = wrap(mDurs[index] + (max_dur_step * randomNormal()), 0.8, 1.2);
-
+    
     // step/adjust grain sample offsets 
     g_idx = g_idx_next;
     g_idx_next = 0.0;
@@ -228,23 +236,14 @@ void GenEcho::step() {
   outputs[SINE_OUTPUT].value = amp_out;
 }
 
-float GenEcho::wrap(float in, float lb, float ub) {
-  float out = in;
-  if (in > ub) out = ub;
-  else if (in < lb) out = lb;
-  return out;
-}
-
 struct GenEchoWidget : ModuleWidget {
 	GenEchoWidget(GenEcho *module) : ModuleWidget(module) {
 		setPanel(SVG::load(assetPlugin(plugin, "res/GenEcho.svg")));
    
-    //addParam(ParamWidget::create<CKD6>(Vec(51.210, 80.46), module, GenEcho::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
-   
     addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.883, 40.49), module, GenEcho::SLEN_PARAM, 0.01f, 1.f, 0.f));
 
     addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.883, 139.97), module, GenEcho::BPTS_PARAM, 0, 2200, 0.0));
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(55.883, 139.97), module, GenEcho::BPTSCV_PARAM, 0, 2200, 0.0));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(55.883, 168.88), module, GenEcho::BPTSCV_PARAM, 0.f, 1.f, 0.0));
     
     addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(9.883, 208.54), module, GenEcho::ASTP_PARAM, 0.0, 0.6, 0.9));
     addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(55.883, 208.54), module, GenEcho::ASTPCV_PARAM, 0.f, 1.f, 0.f));
@@ -254,18 +253,21 @@ struct GenEchoWidget : ModuleWidget {
     
     addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(7.883, 344.25), module, GenEcho::ENVS_PARAM, 1.f, 4.f, 4.f));
 
-    //addParam(ParamWidget::create<CKD6>(Vec(110, 70), module, GenEcho::GATE_PARAM, 0.0f, 1.0f, 0.0f));
-
+    // triggers for toggling mirroring and changing probability distribution
+    addParam(ParamWidget::create<CKSS>(Vec(60.789, 72.98), module, GenEcho::ACCM_PARAM, 0.f, 1.f, 0.f)); 
+    addParam(ParamWidget::create<CKSS>(Vec(60.789, 103.69), module, GenEcho::MIRR_PARAM, 0.f, 1.f, 0.f)); 
+    addParam(ParamWidget::create<CKSSThree>(Vec(60.789, 132.26), module, GenEcho::PDST_PARAM, 0.f, 2.f, 0.f)); 
+    
     addInput(Port::create<PJ301MPort>(Vec(10.281, 69.79), Port::INPUT, module, GenEcho::WAV0_INPUT));
     addInput(Port::create<PJ301MPort>(Vec(10.281, 95.54), Port::INPUT, module, GenEcho::GATE_INPUT));
     
-    addInput(Port::create<PJ301MPort>(Vec(56.281, 95.54), Port::INPUT, module, GenEcho::RSET_INPUT));
+    addInput(Port::create<PJ301MPort>(Vec(58.281, 44.05), Port::INPUT, module, GenEcho::RSET_INPUT));
     
     addInput(Port::create<PJ301MPort>(Vec(10.281, 169.01), Port::INPUT, module, GenEcho::BPTS_INPUT));
     addInput(Port::create<PJ301MPort>(Vec(10.281, 236.72), Port::INPUT, module, GenEcho::ASTP_INPUT));
     addInput(Port::create<PJ301MPort>(Vec(10.281, 306.00), Port::INPUT, module, GenEcho::DSTP_INPUT));
 
-    addOutput(Port::create<PJ301MPort>(Vec(55.54, 345.97), Port::OUTPUT, module, GenEcho::SINE_OUTPUT));
+    addOutput(Port::create<PJ301MPort>(Vec(50.50, 347.46), Port::OUTPUT, module, GenEcho::SINE_OUTPUT));
   }
 };
 
