@@ -36,8 +36,10 @@ namespace rack {
     float amp = 0.0; 
     float amp_next = amps[0];
     
-    float max_amp_step = 0.05;
-    float max_dur_step = 0.05;
+    float max_amp_step = 0.05f;
+    float max_dur_step = 0.05f;
+    float max_off_step = 0.005f;
+    
     float speed = 0.0;
     float rate = 0.0;
 
@@ -103,10 +105,12 @@ namespace rack {
         if (is_mirroring) {
           amps[index] = mirror(amps[index] + (max_amp_step * rg.my_rand(dt, randomNormal())), -1.0f, 1.0f); 
           durs[index] = mirror(durs[index] + (max_dur_step * rg.my_rand(dt, randomNormal())), 0.5f, 1.5f);
+          offs[index] = mirror(offs[index] + (max_off_step * rg.my_rand(dt, randomNormal())), 0.f, 1.0f);
         }
         else {
           amps[index] = wrap(amps[index] + (max_amp_step * rg.my_rand(dt, randomNormal())), -1.0f, 1.0f); 
           durs[index] = wrap(durs[index] + (max_dur_step * rg.my_rand(dt, randomNormal())), 0.5f, 1.5f);
+          offs[index] = wrap(offs[index] + (max_off_step * rg.my_rand(dt, randomNormal())), 0.f, 1.0f);
         }
         
         amp_next = amps[index];
@@ -133,8 +137,9 @@ namespace rack {
         // could be controllable for some more audible effect
         
         g_amp = amp + (env.get(g_idx) * sample.get(off));
-        //g_amp = amp + (env.get(g_idx) * sample.get(phase_car1));
         g_amp_next = amp_next + (env.get(g_idx_next) * sample.get(off_next));
+        
+        //g_amp = amp + (env.get(g_idx) * sample.get(phase_car1));
         //g_amp_next = amp_next + (env.get(g_idx_next) * sample.get(phase_car2));
 
         // linear interpolation

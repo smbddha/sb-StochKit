@@ -111,7 +111,7 @@ void MyModule::step() {
   grat_sig = (inputs[GRAT_INPUT].value / 5.f) * params[GRATCV_PARAM].value;
  
   // fm control sigs
-  fmod_sig = quadraticBipolar((inputs[FMOD_INPUT].value / 5.f) * params[FMODCV_PARAM].value);
+  fmod_sig = (inputs[FMOD_INPUT].value / 5.f) * params[FMODCV_PARAM].value;
   imod_sig = quadraticBipolar((inputs[IMOD_INPUT].value / 5.f) * params[IMODCV_PARAM].value);
 
   int new_nbpts = clamp((int) params[BPTS_PARAM].value + (int) bpts_sig, 2, MAX_BPTS);
