@@ -85,6 +85,8 @@ namespace rack {
 
     int count = 0;
 
+    float freq = 261.626f;
+
     void process(float deltaTime) {
       last_flag = false;
       if (phase >= 1.0) {
@@ -117,8 +119,10 @@ namespace rack {
         g_idx = g_idx_next;
         g_idx_next = 0.0;
 
-        speed = ((max_freq - min_freq) * rate + min_freq) * deltaTime * num_bpts; 
-        speed *= freq_mul;
+        //speed = ((max_freq - min_freq) * rate + min_freq) * deltaTime * num_bpts; 
+        speed = freq * deltaTime * num_bpts;
+        
+        //speed *= freq_mul;
       }
      
       if (!is_fm_on) {
@@ -142,16 +146,20 @@ namespace rack {
         amp_out = ((1.0 - phase) * g_amp) + (phase * g_amp_next); 
       }
 
+      if (amp_out > 7.f) {
+        //debug("freq: %f, amp: %f, amp_next: %f");
+      }
+
       // advance the grain envelope indices
-      g_idx = fmod(g_idx + (speed/2), 1.f);
-      g_idx_next = fmod(g_idx_next + (speed/2), 1.f);
+      g_idx = fmod(g_idx + (g_rate * deltaTime), 1.f);
+      g_idx_next = fmod(g_idx_next + (g_rate * deltaTime), 1.f);
 
       // advance sample indices
       // TODO
       //  -> could maybe just bundle with the envelope indices ??
       //  -> MAKE CONTROLLABLE 
-      off = fmod(off + (g_rate * 1e-1 * deltaTime), 1.f);
-      off_next = fmod(off_next + (g_rate * 1e-1 * deltaTime), 1.f);
+      off = fmod(off + (g_rate * deltaTime), 1.f);
+      off_next = fmod(off_next + (g_rate * deltaTime), 1.f);
       
       phase += speed;
 
