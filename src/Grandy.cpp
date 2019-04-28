@@ -1,17 +1,17 @@
 /*
- * MyModule.cpp
+ * Grandy.cpp
  * Samuel Laing - 2019
  *
  * VCV Rack Module with a single GRANDY oscillator
  *
  */
 
-#include "Gendy.hpp"
+#include "StochKit.hpp"
 #include "dsp/resampler.hpp"
 
-#include "GendyOscillator.hpp"
+#include "GrandyOscillator.hpp"
 
-struct MyModule : Module {
+struct Grandy : Module {
 	enum ParamIds {
 		FREQ_PARAM,
     ASTP_PARAM,
@@ -80,14 +80,14 @@ struct MyModule : Module {
 	// - onSampleRateChange: event triggered by a change of sample rate
 	// - onReset, onRandomize, onCreate, onDelete: implements special behavior when user clicks these from the context menu
 
-  MyModule() : Module(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {
+  Grandy() : Module(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {
   }
 	
   void step() override;
   float wrap(float,float,float);
 };
 
-void MyModule::step() {
+void Grandy::step() {
   float deltaTime = engineGetSampleTime();
 
   // snap knob for selecting envelope for the grain
@@ -147,66 +147,68 @@ void MyModule::step() {
 }
 
 
-struct MyModuleWidget : ModuleWidget {
-	MyModuleWidget(MyModule *module) : ModuleWidget(module) {
-		setPanel(SVG::load(assetPlugin(plugin, "res/MyModule3.svg")));
+struct GrandyWidget : ModuleWidget {
+	GrandyWidget(Grandy *module) : ModuleWidget(module) {
+		setPanel(SVG::load(assetPlugin(plugin, "res/Grandy.svg")));
 
+    /*
 		addChild(Widget::create<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
 		addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 1 * RACK_GRID_WIDTH, 0)));
 		addChild(Widget::create<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 		addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 1 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+    */
 
-    //addParam(ParamWidget::create<CKSSThree>(Vec(110, 240), module, MyModule::ENVS_PARAM, 0.0f, 2.0f, 0.0f));
+    //addParam(ParamWidget::create<CKSSThree>(Vec(110, 240), module, Grandy::ENVS_PARAM, 0.0f, 2.0f, 0.0f));
 	
     // knob params
-    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(36.307, 50.42), module, MyModule::FREQ_PARAM, -4.0, 3.0, 0.0));
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(61.360, 94.21), module, MyModule::FREQCV_PARAM, 0.f, 1.f, 0.f));
+    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(36.307, 50.42), module, Grandy::FREQ_PARAM, -4.0, 3.0, 0.0));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(61.360, 94.21), module, Grandy::FREQCV_PARAM, 0.f, 1.f, 0.f));
     
-    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(104.307, 50.42), module, MyModule::BPTS_PARAM, 3, MAX_BPTS, 0));
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(129.360, 94.21), module, MyModule::BPTSCV_PARAM, 0.f, 1.f, 0.f));
+    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(104.307, 50.42), module, Grandy::BPTS_PARAM, 3, MAX_BPTS, 0));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(129.360, 94.21), module, Grandy::BPTSCV_PARAM, 0.f, 1.f, 0.f));
     
-    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(14.307, 145.54), module, MyModule::DSTP_PARAM, 0.f, 1.f, 0.f));
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(39.360, 191.10), module, MyModule::DSTPCV_PARAM, 0.f, 1.f, 0.f));
+    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(14.307, 145.54), module, Grandy::DSTP_PARAM, 0.f, 1.f, 0.f));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(39.360, 191.10), module, Grandy::DSTPCV_PARAM, 0.f, 1.f, 0.f));
     
-    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(84.307, 145.54), module, MyModule::ASTP_PARAM, 0.f, 1.f, 0.f));
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(107.360, 191.10), module, MyModule::ASTPCV_PARAM, 0.f, 1.f, 0.f));
+    addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(84.307, 145.54), module, Grandy::ASTP_PARAM, 0.f, 1.f, 0.f));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(107.360, 191.10), module, Grandy::ASTPCV_PARAM, 0.f, 1.f, 0.f));
     
-    addParam(ParamWidget::create<CKSSThree>(Vec(143.417, 147.64), module, MyModule::PDST_PARAM, 0.f, 2.f, 0.f)); 
-    addParam(ParamWidget::create<CKSS>(Vec(143.379, 202.07), module, MyModule::MIRR_PARAM, 0.f, 1.f, 0.f)); 
+    addParam(ParamWidget::create<CKSSThree>(Vec(143.417, 147.64), module, Grandy::PDST_PARAM, 0.f, 2.f, 0.f)); 
+    addParam(ParamWidget::create<CKSS>(Vec(143.379, 202.07), module, Grandy::MIRR_PARAM, 0.f, 1.f, 0.f)); 
 
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(35.360, 243.98), module, MyModule::GRAT_PARAM, -6.f, 3.f, 0.f));
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(69.360, 243.98), module, MyModule::GRATCV_PARAM, 0.f, 1.f, 0.f));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(35.360, 243.98), module, Grandy::GRAT_PARAM, -6.f, 3.f, 0.f));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(69.360, 243.98), module, Grandy::GRATCV_PARAM, 0.f, 1.f, 0.f));
 
-    addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(141.195, 240.69), module, MyModule::ENVS_PARAM, 1.0f, 4.0f, 4.0f));
+    addParam(ParamWidget::create<RoundBlackSnapKnob>(Vec(141.195, 240.69), module, Grandy::ENVS_PARAM, 1.0f, 4.0f, 4.0f));
 
     // for fm 
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(23.360, 302.25), module, MyModule::FCAR_PARAM, -4.f, 4.f, 0.f));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(23.360, 302.25), module, Grandy::FCAR_PARAM, -4.f, 4.f, 0.f));
     
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(63.360, 302.25), module, MyModule::FMOD_PARAM, -4.f, 4.f, 0.f));
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(97.360, 302.25), module, MyModule::FMODCV_PARAM, 0.f, 1.f, 0.f));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(63.360, 302.25), module, Grandy::FMOD_PARAM, -4.f, 4.f, 0.f));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(97.360, 302.25), module, Grandy::FMODCV_PARAM, 0.f, 1.f, 0.f));
 
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(13.360, 348.84), module, MyModule::IMOD_PARAM, -4.f, 4.f, 0.f));
-    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(47.360, 348.84), module, MyModule::IMODCV_PARAM, 0.f, 1.f, 0.f));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(13.360, 348.84), module, Grandy::IMOD_PARAM, -4.f, 4.f, 0.f));
+    addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(47.360, 348.84), module, Grandy::IMODCV_PARAM, 0.f, 1.f, 0.f));
 
-	  addParam(ParamWidget::create<CKSS>(Vec(11.360, 257.01), module, MyModule::FMTR_PARAM, 0.0f, 1.0f, 0.0f));
+	  addParam(ParamWidget::create<CKSS>(Vec(11.360, 257.01), module, Grandy::FMTR_PARAM, 0.0f, 1.0f, 0.0f));
     
     // signal inputs
-    addInput(Port::create<PJ301MPort>(Vec(24.967, 93.61), Port::INPUT, module, MyModule::FREQ_INPUT));
-    addInput(Port::create<PJ301MPort>(Vec(92.967, 93.61), Port::INPUT, module, MyModule::BPTS_INPUT));
+    addInput(Port::create<PJ301MPort>(Vec(24.967, 93.61), Port::INPUT, module, Grandy::FREQ_INPUT));
+    addInput(Port::create<PJ301MPort>(Vec(92.967, 93.61), Port::INPUT, module, Grandy::BPTS_INPUT));
     
-    addInput(Port::create<PJ301MPort>(Vec(2.976, 188.72), Port::INPUT, module, MyModule::ASTP_INPUT));
-		addInput(Port::create<PJ301MPort>(Vec(70.966, 188.72), Port::INPUT, module, MyModule::DSTP_INPUT));
+    addInput(Port::create<PJ301MPort>(Vec(2.976, 188.72), Port::INPUT, module, Grandy::ASTP_INPUT));
+		addInput(Port::create<PJ301MPort>(Vec(70.966, 188.72), Port::INPUT, module, Grandy::DSTP_INPUT));
     
-    //addInput(Port::create<PJ301MPort>(Vec(100, 340.42), Port::INPUT, module, MyModule::ENVS_INPUT));
+    //addInput(Port::create<PJ301MPort>(Vec(100, 340.42), Port::INPUT, module, Grandy::ENVS_INPUT));
 		
-    addInput(Port::create<PJ301MPort>(Vec(102.966, 243.50), Port::INPUT, module, MyModule::GRAT_INPUT));
+    addInput(Port::create<PJ301MPort>(Vec(102.966, 243.50), Port::INPUT, module, Grandy::GRAT_INPUT));
    
     // for fm
-		addInput(Port::create<PJ301MPort>(Vec(130.966, 300.72), Port::INPUT, module, MyModule::FMOD_INPUT));
-		addInput(Port::create<PJ301MPort>(Vec(82.966, 348.50), Port::INPUT, module, MyModule::IMOD_INPUT));
+		addInput(Port::create<PJ301MPort>(Vec(130.966, 300.72), Port::INPUT, module, Grandy::FMOD_INPUT));
+		addInput(Port::create<PJ301MPort>(Vec(82.966, 348.50), Port::INPUT, module, Grandy::IMOD_INPUT));
 
     // output signal 
-    addOutput(Port::create<PJ301MPort>(Vec(124.003, 348.50), Port::OUTPUT, module, MyModule::SINE_OUTPUT));
+    addOutput(Port::create<PJ301MPort>(Vec(124.003, 348.50), Port::OUTPUT, module, Grandy::SINE_OUTPUT));
 	}
 };
 
@@ -215,4 +217,4 @@ struct MyModuleWidget : ModuleWidget {
 // author name for categorization per plugin, module slug (should never
 // change), human-readable module name, and any number of tags
 // (found in `include/tags.hpp`) separated by commas.
-Model *modelMyModule = Model::create<MyModule, MyModuleWidget>("Gendy", "MyModule", "My Module", OSCILLATOR_TAG);
+Model *modelGrandy = Model::create<Grandy, GrandyWidget>("StochKit", "Grandy", "A granular dynamic stochastic synthesis generator", OSCILLATOR_TAG);

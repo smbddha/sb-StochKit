@@ -11,9 +11,9 @@
 #include "dsp/digital.hpp"
 #include "dsp/resampler.hpp"
 
-#include "Gendy.hpp"
+#include "StochKit.hpp"
 #include "wavetable.hpp"
-#include "GendyOscillator.hpp"
+#include "GrandyOscillator.hpp"
 
 #define NUM_OSCS 4
 
@@ -347,4 +347,4 @@ struct StitcherWidget : ModuleWidget {
   }
 };
 
-Model *modelStitcher = Model::create<Stitcher, StitcherWidget>("Gendy", "Stitcher", "Stitcher Module", OSCILLATOR_TAG);
+Model *modelStitcher = Model::create<Stitcher, StitcherWidget>("StochKit", "Stitcher", "Stitcher Module", OSCILLATOR_TAG);

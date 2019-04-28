@@ -1,4 +1,4 @@
-#include "Gendy.hpp"
+#include "StochKit.hpp"
 
 #include "util/common.hpp"
 #include "dsp/digital.hpp"

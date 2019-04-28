@@ -7,7 +7,7 @@
  * module
  */
 
-#include "Gendy.hpp"
+#include "StochKit.hpp"
 
 #include "util/common.hpp"
 #include "dsp/digital.hpp"
@@ -276,4 +276,4 @@ struct GenEchoWidget : ModuleWidget {
 // author name for categorization per plugin, module slug (should never
 // change), human-readable module name, and any number of tags
 // (found in `include/tags.hpp`) separated by commas.
-Model *modelGenEcho = Model::create<GenEcho, GenEchoWidget>("Gendy", "gene c h o", "g e n e cho", OSCILLATOR_TAG);
+Model *modelGenEcho = Model::create<GenEcho, GenEchoWidget>("StochKit", "gene c h o", "g e n e cho", OSCILLATOR_TAG);

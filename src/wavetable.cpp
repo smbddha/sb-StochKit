@@ -1,3 +1,10 @@
+/*
+ * wavetable.cpp
+ * Samuel Laing - 2019
+ *
+ * just a few utility functions to be used by the GendyOscillator
+ */
+
 #include "wavetable.hpp"
 
 namespace rack {

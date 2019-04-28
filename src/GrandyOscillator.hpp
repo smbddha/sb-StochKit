@@ -1,13 +1,13 @@
 /*
- * GendyOscillator.hpp
+ * GrandyOscillator.hpp
  * Samuel Laing - 2019
  *
  * Implementation of a singular generator using granular stochastic
  * dynamic synthesis
  */
 
-#ifndef __GENDYOSC_HPP__
-#define __GENDYOSC_HPP__
+#ifndef __GRANDYOSC_HPP__
+#define __GRANDYOSC_HPP__
 
 #include "util/common.hpp"
 #include "dsp/digital.hpp"
