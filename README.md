@@ -1,6 +1,6 @@
 
-# Stochastic Granular Dynamic Synthesis S
-vcv rack module
+# Stochastic Toolkit
+A few VCV Rack modules building off of Xenakis's stochastic synthesis and GENDYN program.
 
 # Manual
 
