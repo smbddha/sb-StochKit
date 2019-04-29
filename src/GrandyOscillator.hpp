@@ -31,6 +31,7 @@ namespace rack {
     float amps[MAX_BPTS] = {0.f};
     float durs[MAX_BPTS] = {1.f};
     float offs[MAX_BPTS] = {0.f};
+    float rats[MAX_BPTS] = {1.f};
 
     int index = 0;
     float amp = 0.0; 
@@ -39,7 +40,8 @@ namespace rack {
     float max_amp_step = 0.05f;
     float max_dur_step = 0.05f;
     float max_off_step = 0.005f;
-    
+    float max_rat_step = 0.01f;
+
     float speed = 0.0;
     float rate = 0.0;
 
@@ -55,6 +57,9 @@ namespace rack {
     float g_amp = 0.f;
     float g_amp_next = 0.f;
     float g_rate = 1.f;
+
+    float rat = 1.f;
+    float rat_next = 1.f;
 
     Wavetable sample = Wavetable(SIN);
     Wavetable env = Wavetable(TRI); 
@@ -97,6 +102,7 @@ namespace rack {
         phase -= 1.0;
 
         amp = amp_next;
+        rat = rat_next;
         index = (index + 1) % num_bpts;
        
         last_flag = index == num_bpts - 1;
@@ -106,15 +112,18 @@ namespace rack {
           amps[index] = mirror(amps[index] + (max_amp_step * rg.my_rand(dt, randomNormal())), -1.0f, 1.0f); 
           durs[index] = mirror(durs[index] + (max_dur_step * rg.my_rand(dt, randomNormal())), 0.5f, 1.5f);
           offs[index] = mirror(offs[index] + (max_off_step * rg.my_rand(dt, randomNormal())), 0.f, 1.0f);
+          rats[index] = mirror(rats[index] + (max_off_step * rg.my_rand(dt, randomNormal())), 0.7f, 1.3f);
         }
         else {
           amps[index] = wrap(amps[index] + (max_amp_step * rg.my_rand(dt, randomNormal())), -1.0f, 1.0f); 
           durs[index] = wrap(durs[index] + (max_dur_step * rg.my_rand(dt, randomNormal())), 0.5f, 1.5f);
           offs[index] = wrap(offs[index] + (max_off_step * rg.my_rand(dt, randomNormal())), 0.f, 1.0f);
+          rats[index] = wrap(rats[index] + (max_off_step * rg.my_rand(dt, randomNormal())), 0.7f, 1.3f);
         }
         
         amp_next = amps[index];
         rate = durs[index];
+        rat_next = rats[index];
 
         /* step/adjust grain sample offsets */
         off = off_next;
@@ -169,8 +178,8 @@ namespace rack {
       phase += speed;
 
       // step phases and frequencies for fm in grans
-      phase_car1 += deltaTime * f_car1;
-      phase_car2 += deltaTime * f_car2;
+      phase_car1 += deltaTime * f_car1 * rat;
+      phase_car2 += deltaTime * f_car2 * rat_next;
 
       phase_car1 = fmod(phase_car1, 1.f);
       phase_car2 = fmod(phase_car2, 1.f);

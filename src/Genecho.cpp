@@ -3,8 +3,6 @@
  * Samuel Laing - 2019
  *
  * VCV Rack module that uses granular stochastic methods to alter a sample
- * sample can be loaded (wav files only) or be  piped in from another 
- * module
  */
 
 #include "StochKit.hpp"
@@ -271,9 +269,4 @@ struct GenEchoWidget : ModuleWidget {
   }
 };
 
-
-// Specify the Module and ModuleWidget subclass, human-readable
-// author name for categorization per plugin, module slug (should never
-// change), human-readable module name, and any number of tags
-// (found in `include/tags.hpp`) separated by commas.
-Model *modelGenEcho = Model::create<GenEcho, GenEchoWidget>("StochKit", "gene c h o", "g e n e cho", OSCILLATOR_TAG);
+Model *modelGenEcho = Model::create<GenEcho, GenEchoWidget>("StochKit", "genecho", "The genecho module", EFFECT_TAG);

@@ -347,4 +347,4 @@ struct StitcherWidget : ModuleWidget {
   }
 };
 
-Model *modelStitcher = Model::create<Stitcher, StitcherWidget>("StochKit", "Stitcher", "Stitcher Module", OSCILLATOR_TAG);
+Model *modelStitcher = Model::create<Stitcher, StitcherWidget>("StochKit", "Stitcher", "Stitcher Module", OSCILLATOR_TAG, GRANULAR_TAG);

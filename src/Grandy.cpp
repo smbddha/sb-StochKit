@@ -212,9 +212,4 @@ struct GrandyWidget : ModuleWidget {
 	}
 };
 
-
-// Specify the Module and ModuleWidget subclass, human-readable
-// author name for categorization per plugin, module slug (should never
-// change), human-readable module name, and any number of tags
-// (found in `include/tags.hpp`) separated by commas.
-Model *modelGrandy = Model::create<Grandy, GrandyWidget>("StochKit", "Grandy", "A granular dynamic stochastic synthesis generator", OSCILLATOR_TAG);
+Model *modelGrandy = Model::create<Grandy, GrandyWidget>("StochKit", "Grandy", "A generator module", OSCILLATOR_TAG, GRANULAR_TAG);

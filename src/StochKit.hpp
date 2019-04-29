@@ -10,4 +10,3 @@ extern Plugin *plugin;
 extern Model *modelGrandy;
 extern Model *modelGenEcho;
 extern Model *modelStitcher;
-//extern Model *modelStochStepper;
