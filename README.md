@@ -33,6 +33,3 @@ TODO
 
 ## GenECHO
 TODO
-
-## Stochastic STEPPER
-TODO
