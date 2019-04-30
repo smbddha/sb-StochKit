@@ -55,7 +55,6 @@ struct Grandy : Module {
 		NUM_LIGHTS
 	};
 
-	//float phase = 1.0;
 	float blinkPhase = 0.0;
 
   SchmittTrigger smpTrigger;
@@ -74,11 +73,6 @@ struct Grandy : Module {
   float imod_sig = 0.f;
 
   bool fm_is_on = false;
-
-  // For more advanced Module features, read Rack's engine.hpp header file
-	// - toJson, fromJson: serialization of internal data
-	// - onSampleRateChange: event triggered by a change of sample rate
-	// - onReset, onRandomize, onCreate, onDelete: implements special behavior when user clicks these from the context menu
 
   Grandy() : Module(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {
   }
@@ -158,8 +152,6 @@ struct GrandyWidget : ModuleWidget {
 		addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 1 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
     */
 
-    //addParam(ParamWidget::create<CKSSThree>(Vec(110, 240), module, Grandy::ENVS_PARAM, 0.0f, 2.0f, 0.0f));
-	
     // knob params
     addParam(ParamWidget::create<RoundLargeBlackKnob>(Vec(36.307, 50.42), module, Grandy::FREQ_PARAM, -4.0, 3.0, 0.0));
     addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(61.360, 94.21), module, Grandy::FREQCV_PARAM, 0.f, 1.f, 0.f));
@@ -199,8 +191,6 @@ struct GrandyWidget : ModuleWidget {
     addInput(Port::create<PJ301MPort>(Vec(2.976, 188.72), Port::INPUT, module, Grandy::ASTP_INPUT));
 		addInput(Port::create<PJ301MPort>(Vec(70.966, 188.72), Port::INPUT, module, Grandy::DSTP_INPUT));
     
-    //addInput(Port::create<PJ301MPort>(Vec(100, 340.42), Port::INPUT, module, Grandy::ENVS_INPUT));
-		
     addInput(Port::create<PJ301MPort>(Vec(102.966, 243.50), Port::INPUT, module, Grandy::GRAT_INPUT));
    
     // for fm

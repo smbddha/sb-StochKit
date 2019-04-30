@@ -97,7 +97,7 @@ struct Stitcher : Module {
   int osc_idx = 0;
 
   // allow an adjustable number of oscillators
-  // to be used 2 -> 4
+  // to be used 1 -> 4
   int curr_num_oscs = NUM_OSCS;
   int stutters[NUM_OSCS] = {1};
   int current_stutter = 1;
@@ -244,7 +244,6 @@ void Stitcher::step() {
         speed = gos[osc_idx].speed;
         osc_idx = (osc_idx + 1) % curr_num_oscs;
         
-        //debug("-- new idx %d, bpts: %d, freq_mul: %d", osc_idx, gos[osc_idx].num_bpts, gos[osc_idx].freq_mul); 
 
         gos[osc_idx].process(deltaTime);
         amp_next = gos[osc_idx].out();  
@@ -272,7 +271,6 @@ struct StitcherWidget : ModuleWidget {
 		addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 6 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
     */
 
-		//addParam(ParamWidget::create<CKD6>(Vec(40, 70), module, Stitcher::TRIG_PARAM, 0.0f, 1.0f, 0.0f));
 
     for (int i = 0; i < NUM_OSCS; i++) {
       addParam(ParamWidget::create<RoundSmallBlackKnob>(Vec(10.004, 15.89+(i*95)), module, Stitcher::F_PARAM + i, -4.f, 4.f, 0.f));

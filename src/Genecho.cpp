@@ -79,7 +79,6 @@ struct GenEcho : Module {
 
   float mAmps[MAX_BPTS] = {0.f};
   float mDurs[MAX_BPTS] = {1.f};
-  //float mOffs[MAX_BPTS] = {0.f};
 
   Wavetable env = Wavetable(TRI); 
 

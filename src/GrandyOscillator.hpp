@@ -140,17 +140,9 @@ namespace rack {
      
       if (!is_fm_on) {
        
-        // perform addition of grain to the generated amplitudes
-        // TODO
-        // maybe envs need a corresponding amplitude as well 
-        // could be controllable for some more audible effect
-        
         g_amp = amp + (env.get(g_idx) * sample.get(off));
         g_amp_next = amp_next + (env.get(g_idx_next) * sample.get(off_next));
         
-        //g_amp = amp + (env.get(g_idx) * sample.get(phase_car1));
-        //g_amp_next = amp_next + (env.get(g_idx_next) * sample.get(phase_car2));
-
         // linear interpolation
         amp_out = ((1.0 - phase) * g_amp) + (phase * g_amp_next); 
       } else {
@@ -160,18 +152,10 @@ namespace rack {
         amp_out = ((1.0 - phase) * g_amp) + (phase * g_amp_next); 
       }
 
-      if (amp_out > 7.f) {
-        //debug("freq: %f, amp: %f, amp_next: %f");
-      }
-
       // advance the grain envelope indices
       g_idx = fmod(g_idx + (g_rate * deltaTime), 1.f);
       g_idx_next = fmod(g_idx_next + (g_rate * deltaTime), 1.f);
 
-      // advance sample indices
-      // TODO
-      //  -> could maybe just bundle with the envelope indices ??
-      //  -> MAKE CONTROLLABLE 
       off = fmod(off + (g_rate * deltaTime), 1.f);
       off_next = fmod(off_next + (g_rate * deltaTime), 1.f);
       
@@ -193,10 +177,6 @@ namespace rack {
       f_car1 = fmod(f_car + (i_mod * sample.get(phase_mod1)), 22050.f);
       f_car2 = fmod(f_car + (i_mod * sample.get(phase_mod2)), 22050.f);
     
-      if (count >30) {
-        //debug("f car: %f; f mod: %f, phase_car: %f, phase_mod: %f\n", f_car, f_mod, phase_car1, phase_mod1);
-        count = 30;
-      }
       count++;
     }
 
