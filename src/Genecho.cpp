@@ -212,8 +212,8 @@ void GenEcho::process(const ProcessArgs &args) {
     index = (index + 1) % num_bpts;
     
     // adjust vals
-    astp = max_amp_step * rg.my_rand(dt, random::uniform());
-    dstp = max_dur_step * rg.my_rand(dt, random::uniform());
+    astp = max_amp_step * rg.my_rand(dt, random::normal());
+    dstp = max_dur_step * rg.my_rand(dt, random::normal());
 
     if (is_mirroring) {
       mAmps[index] = mirror((is_accumulating ? mAmps[index] : 0.f) + astp, -1.0f, 1.0f); 

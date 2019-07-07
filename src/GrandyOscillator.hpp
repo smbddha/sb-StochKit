@@ -109,16 +109,16 @@ namespace rack {
 
         /* adjust vals */
         if (is_mirroring) {
-          amps[index] = mirror(amps[index] + (max_amp_step * rg.my_rand(dt, random::uniform())), -1.0f, 1.0f); 
-          durs[index] = mirror(durs[index] + (max_dur_step * rg.my_rand(dt, random::uniform())), 0.5f, 1.5f);
-          offs[index] = mirror(offs[index] + (max_off_step * rg.my_rand(dt, random::uniform())), 0.f, 1.0f);
-          rats[index] = mirror(rats[index] + (max_off_step * rg.my_rand(dt, random::uniform())), 0.7f, 1.3f);
+          amps[index] = mirror(amps[index] + (max_amp_step * rg.my_rand(dt, random::normal())), -1.0f, 1.0f); 
+          durs[index] = mirror(durs[index] + (max_dur_step * rg.my_rand(dt, random::normal())), 0.5f, 1.5f);
+          offs[index] = mirror(offs[index] + (max_off_step * rg.my_rand(dt, random::normal())), 0.f, 1.0f);
+          rats[index] = mirror(rats[index] + (max_off_step * rg.my_rand(dt, random::normal())), 0.7f, 1.3f);
         }
         else {
-          amps[index] = wrap(amps[index] + (max_amp_step * rg.my_rand(dt, random::uniform())), -1.0f, 1.0f); 
-          durs[index] = wrap(durs[index] + (max_dur_step * rg.my_rand(dt, random::uniform())), 0.5f, 1.5f);
-          offs[index] = wrap(offs[index] + (max_off_step * rg.my_rand(dt, random::uniform())), 0.f, 1.0f);
-          rats[index] = wrap(rats[index] + (max_off_step * rg.my_rand(dt, random::uniform())), 0.7f, 1.3f);
+          amps[index] = wrap(amps[index] + (max_amp_step * rg.my_rand(dt, random::normal())), -1.0f, 1.0f); 
+          durs[index] = wrap(durs[index] + (max_dur_step * rg.my_rand(dt, random::normal())), 0.5f, 1.5f);
+          offs[index] = wrap(offs[index] + (max_off_step * rg.my_rand(dt, random::normal())), 0.f, 1.0f);
+          rats[index] = wrap(rats[index] + (max_off_step * rg.my_rand(dt, random::normal())), 0.7f, 1.3f);
         }
         
         amp_next = amps[index];
