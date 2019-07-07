@@ -1,0 +1,19 @@
+{
+    "slug": "sb-StochKit",
+    "name": "StochKit",
+    "version": "1.0.0",
+    "license": "GPL-3.0-or-later",
+    "brand": "StochKit",
+    "author": "Sam Laing",
+    "modules": [
+        {
+            "slug": "Stitcher",
+            "name": "Stitcher",
+            "description": "Stitcher module",
+            "tags": [
+                "Granular",
+                "VCO"
+            ]
+        }
+    ]
+}

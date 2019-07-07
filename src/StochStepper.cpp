@@ -1,6 +1,4 @@
-#include "StochKit.hpp"
-
-#include "util/common.hpp"
+#include "plugin.hpp"
 #include "dsp/digital.hpp"
 
 struct StochStepper : Module {
@@ -29,7 +27,7 @@ struct StochStepper : Module {
     EXP 
   };
 
-  SchmittTrigger stepTrigger;
+  dsp::SchmittTrigger stepTrigger;
 
   float amp = 0.f;
   float amp_next = 0.f;
@@ -37,20 +35,23 @@ struct StochStepper : Module {
 
   StepTypes t_step = STEP;
 
-  StochStepper() : Module(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {
+  StochStepper() {
+    config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
+    configParam(STEP_PARAM, 0.0f, 2.0f, 0.0f);
+    // configParam(FREQ_PARAM, -1.0, 1.0, 0.0);
   }
-	
-  void step() override;
+
+  void process(const ProcessArgs &args) override;
   float wrap(float,float,float);
 };
 
-void StochStepper::step() {
-	// Implement a simple sine oscillator
-  //float deltaTime = engineGetSampleTime();
+void StochStepper::process(const ProcessArgs &args) {
+  // Implement a simple sine oscillator
+  //float deltaTime = args.sampleTime;
  
-  t_step = (StepTypes) params[STEP_PARAM].value;
+  t_step = (StepTypes) params[STEP_PARAM].getValue();
 
-  if (stepTrigger.process(inputs[STEP_INPUT].value / 2.f)) {
+  if (stepTrigger.process(inputs[STEP_INPUT].getVoltage() / 2.f)) {
     // handle the next amplitude generation here using the 
     // different probability distributions
   }
@@ -67,27 +68,28 @@ void StochStepper::step() {
   }
   // continue with interpolation if not doing ramp
 
-  outputs[STOC_OUTPUT].value = 5.0f;
+  outputs[STOC_OUTPUT].setVoltage(5.0f);
 }
 
 struct StochStepperWidget : ModuleWidget {
-	StochStepperWidget(StochStepper *module) : ModuleWidget(module) {
-		setPanel(SVG::load(assetPlugin(plugin, "res/StochStepper.svg")));
+	StochStepperWidget(StochStepper *module) {
+    setModule(module);
+    setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/StochStepper.svg")));
 
-		addChild(Widget::create<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-		addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 6 * RACK_GRID_WIDTH, 0)));
-		addChild(Widget::create<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-		addChild(Widget::create<ScrewSilver>(Vec(box.size.x - 6 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
+		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 6 * RACK_GRID_WIDTH, 0)));
+		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 6 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-    addParam(ParamWidget::create<CKSSThree>(Vec(110, 240), module, StochStepper::STEP_PARAM, 0.0f, 2.0f, 0.0f));
+    addParam(createParam<CKSSThree>(Vec(110, 240), module, StochStepper::STEP_PARAM));
 		
-    //addParam(ParamWidget::create<RoundHugeBlackKnob>(Vec(15, 68), module, StochStepper::FREQ_PARAM, -1.0, 1.0, 0.0));
-   	//addInput(Port::create<PJ301MPort>(Vec(76.210, 285.33), Port::INPUT, module, StochStepper::GRAT_INPUT));
+    //addParam(createParam<RoundHugeBlackKnob>(Vec(15, 68), module, StochStepper::FREQ_PARAM));
+   	//addInput(createInput<PJ301MPort>(Vec(76.210, 285.33), module, StochStepper::GRAT_INPUT));
 
-    addOutput(Port::create<PJ301MPort>(Vec(134.003, 334.86), Port::OUTPUT, module, StochStepper::STOC_OUTPUT));
+    addOutput(createOutput<PJ301MPort>(Vec(134.003, 334.86), module, StochStepper::STOC_OUTPUT));
 
-		//addChild(ModuleLightWidget::create<MediumLight<RedLight>>(Vec(41, 59), module, StochStepper::BLINK_LIGHT));
+		//addChild(createWidget<MediumLight<RedLight>>(Vec(41, 59), module, StochStepper::BLINK_LIGHT));
 	}
 };
 
-Model *modelStochStepper = Model::create<StochStepper, StochStepperWidget>("Gendy", "StochStepper", "Stochastic Stepper", OSCILLATOR_TAG);
+Model *modelStochStepper = createModel<StochStepper, StochStepperWidget>("StochStepper");
