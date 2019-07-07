@@ -7,6 +7,14 @@
     "author": "Sam Laing",
     "modules": [
         {
+            "slug": "GenEcho",
+            "name": "GenEcho",
+            "description": "The GenEcho module",
+            "tags": [
+                "Effect"
+            ]
+        },
+        {
             "slug": "Grandy",
             "name": "Grandy",
             "description": "A generator module",
