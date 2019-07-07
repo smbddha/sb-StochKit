@@ -7,6 +7,15 @@
     "author": "Sam Laing",
     "modules": [
         {
+            "slug": "Grandy",
+            "name": "Grandy",
+            "description": "A generator module",
+            "tags": [
+                "Granular",
+                "VCO"
+            ]
+        },
+        {
             "slug": "Stitcher",
             "name": "Stitcher",
             "description": "Stitcher module",

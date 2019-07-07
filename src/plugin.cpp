@@ -8,7 +8,7 @@ void init(Plugin *p) {
   p->version = TOSTRING(VERSION);
 
   // Add all Models defined throughout the plugin
-  // p->addModel(modelGrandy);
   // p->addModel(modelGenEcho);
+  p->addModel(modelGrandy);
   p->addModel(modelStitcher);
 }

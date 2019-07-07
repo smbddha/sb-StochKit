@@ -6,6 +6,6 @@ using namespace rack;
 extern Plugin *pluginInstance;
 
 // Forward-declare each Model, defined in each module source file
-// extern Model *modelGrandy;
 // extern Model *modelGenEcho;
+extern Model *modelGrandy;
 extern Model *modelStitcher;
