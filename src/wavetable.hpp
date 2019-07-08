@@ -10,7 +10,7 @@
 #ifndef __WAVETABLE_HPP__
 #define __WAVETABLE_HPP__
 
-#include "util/common.hpp"
+#include <rack.hpp>
 
 #define TABLE_SIZE 2048 
 
@@ -198,7 +198,7 @@ namespace rack {
      * Expects val 0.0 <= x < 1.0
      */
     float get(float x) {
-      if (x > 1.000000) debug("BAD!\n");
+      if (x > 1.000000) DEBUG("BAD!\n");
       return index(x * (float) TABLE_SIZE); 
     }
   };

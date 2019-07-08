@@ -9,7 +9,7 @@
 #ifndef __GRANDYOSC_HPP__
 #define __GRANDYOSC_HPP__
 
-#include "util/common.hpp"
+#include "rack.hpp"
 #include "dsp/digital.hpp"
 
 #include "wavetable.hpp"
@@ -98,7 +98,7 @@ namespace rack {
       last_flag = false;
       if (phase >= 1.0) {
         
-        //debug("-- PHASE: %f ; G_IDX: %f ; G_IDX_NEXT: %f", phase, g_idx, g_idx_next);
+        //DEBUG("-- PHASE: %f ; G_IDX: %f ; G_IDX_NEXT: %f", phase, g_idx, g_idx_next);
         phase -= 1.0;
 
         amp = amp_next;
@@ -109,16 +109,16 @@ namespace rack {
 
         /* adjust vals */
         if (is_mirroring) {
-          amps[index] = mirror(amps[index] + (max_amp_step * rg.my_rand(dt, randomNormal())), -1.0f, 1.0f); 
-          durs[index] = mirror(durs[index] + (max_dur_step * rg.my_rand(dt, randomNormal())), 0.5f, 1.5f);
-          offs[index] = mirror(offs[index] + (max_off_step * rg.my_rand(dt, randomNormal())), 0.f, 1.0f);
-          rats[index] = mirror(rats[index] + (max_off_step * rg.my_rand(dt, randomNormal())), 0.7f, 1.3f);
+          amps[index] = mirror(amps[index] + (max_amp_step * rg.my_rand(dt, random::normal())), -1.0f, 1.0f); 
+          durs[index] = mirror(durs[index] + (max_dur_step * rg.my_rand(dt, random::normal())), 0.5f, 1.5f);
+          offs[index] = mirror(offs[index] + (max_off_step * rg.my_rand(dt, random::normal())), 0.f, 1.0f);
+          rats[index] = mirror(rats[index] + (max_off_step * rg.my_rand(dt, random::normal())), 0.7f, 1.3f);
         }
         else {
-          amps[index] = wrap(amps[index] + (max_amp_step * rg.my_rand(dt, randomNormal())), -1.0f, 1.0f); 
-          durs[index] = wrap(durs[index] + (max_dur_step * rg.my_rand(dt, randomNormal())), 0.5f, 1.5f);
-          offs[index] = wrap(offs[index] + (max_off_step * rg.my_rand(dt, randomNormal())), 0.f, 1.0f);
-          rats[index] = wrap(rats[index] + (max_off_step * rg.my_rand(dt, randomNormal())), 0.7f, 1.3f);
+          amps[index] = wrap(amps[index] + (max_amp_step * rg.my_rand(dt, random::normal())), -1.0f, 1.0f); 
+          durs[index] = wrap(durs[index] + (max_dur_step * rg.my_rand(dt, random::normal())), 0.5f, 1.5f);
+          offs[index] = wrap(offs[index] + (max_off_step * rg.my_rand(dt, random::normal())), 0.f, 1.0f);
+          rats[index] = wrap(rats[index] + (max_off_step * rg.my_rand(dt, random::normal())), 0.7f, 1.3f);
         }
         
         amp_next = amps[index];

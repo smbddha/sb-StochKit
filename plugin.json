@@ -1,0 +1,36 @@
+{
+    "slug": "sb-StochKit",
+    "name": "StochKit",
+    "version": "1.0.0",
+    "license": "GPL-3.0-or-later",
+    "brand": "StochKit",
+    "author": "Sam Laing",
+    "modules": [
+        {
+            "slug": "GenEcho",
+            "name": "GenEcho",
+            "description": "The GenEcho module",
+            "tags": [
+                "Effect"
+            ]
+        },
+        {
+            "slug": "Grandy",
+            "name": "Grandy",
+            "description": "A generator module",
+            "tags": [
+                "Granular",
+                "VCO"
+            ]
+        },
+        {
+            "slug": "Stitcher",
+            "name": "Stitcher",
+            "description": "Stitcher module",
+            "tags": [
+                "Granular",
+                "VCO"
+            ]
+        }
+    ]
+}
