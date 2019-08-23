@@ -5,6 +5,11 @@
     "license": "GPL-3.0-or-later",
     "brand": "StochKit",
     "author": "Sam Laing",
+    "authorEmail": "samuelwlaing@gmail.com",
+    "authorUrl": "https://github.com/smbddha",
+    "pluginUrl": "https://github.com/smbddha/sb-StochKit",
+    "manualUrl": "https://github.com/smbddha/sb-StochKit",
+    "sourceUrl": "https://github.com/smbddha/sb-StochKit",
     "modules": [
         {
             "slug": "GenEcho",
